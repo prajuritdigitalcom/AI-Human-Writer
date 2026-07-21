@@ -288,6 +288,38 @@ export default function PreviewView({ article }: PreviewViewProps) {
           </div>
         </div>
 
+        {/* Google Helpful Content Audit Log */}
+        {article.helpfulContentLog && (
+          <div className="bg-emerald-50 border border-emerald-100 p-5 rounded space-y-3" id="google-helpful-audit-sidebar">
+            <h4 className="text-xs font-bold text-emerald-900 flex items-center gap-1.5 uppercase tracking-wider">
+              <CheckCircle className="h-4 w-4 text-emerald-700 shrink-0" />
+              Google Helpful Audit
+            </h4>
+            
+            <div className="space-y-1.5 text-xs text-emerald-800">
+              <div className="flex justify-between">
+                <span className="font-medium">Status:</span>
+                <span className="font-bold uppercase tracking-wide bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded text-[10px]">
+                  {article.helpfulContentLog.validationResult}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">Versi Aturan:</span>
+                <span className="font-mono font-bold text-emerald-900">{article.helpfulContentLog.knowledgeVersion}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">Total Revisi:</span>
+                <span className="font-bold text-emerald-900">{article.helpfulContentLog.revisionCount}</span>
+              </div>
+            </div>
+
+            <div className="border-t border-emerald-200/50 pt-2 text-[11px] text-emerald-900/85 italic leading-relaxed text-justify">
+              <p className="font-semibold not-italic mb-1 text-emerald-950">Analisis Kualitas:</p>
+              {article.helpfulContentLog.evaluationResult}
+            </div>
+          </div>
+        )}
+
         {/* TinyMCE instructions */}
         <div className="bg-blue-50 border border-blue-100 p-5 rounded space-y-2">
           <h4 className="text-xs font-bold text-blue-900 flex items-center gap-1.5">

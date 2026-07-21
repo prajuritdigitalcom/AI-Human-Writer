@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Key, Plus, Trash2, Eye, EyeOff, CheckCircle, HelpCircle, AlertCircle, Database, RefreshCw, Loader2 } from 'lucide-react';
-import { StoredKnowledge, StoredEditorialKnowledge } from '../types';
+import { StoredKnowledge, StoredEditorialKnowledge, StoredGoogleHelpfulKnowledge } from '../types';
 
 interface ApiSettingsViewProps {
   visitorKeys: string[];
@@ -25,9 +25,16 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
   const [editorialSyncStatus, setEditorialSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [editorialSyncError, setEditorialSyncError] = useState('');
 
+  // Google Helpful Content states
+  const [googleHelpfulKnowledge, setGoogleHelpfulKnowledge] = useState<StoredGoogleHelpfulKnowledge | null>(null);
+  const [loadingGoogleHelpful, setLoadingGoogleHelpful] = useState(false);
+  const [googleHelpfulSyncStatus, setGoogleHelpfulSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+  const [googleHelpfulSyncError, setGoogleHelpfulSyncError] = useState('');
+
   useEffect(() => {
     fetchKnowledgeStatus();
     fetchEditorialStatus();
+    fetchGoogleHelpfulStatus();
   }, []);
 
   const fetchKnowledgeStatus = async () => {
@@ -57,6 +64,21 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
       console.error('Error fetching editorial status:', err);
     } finally {
       setLoadingEditorial(false);
+    }
+  };
+
+  const fetchGoogleHelpfulStatus = async () => {
+    setLoadingGoogleHelpful(true);
+    try {
+      const res = await fetch('/api/google-helpful-status');
+      const data = await res.json();
+      if (data.success && data.knowledge) {
+        setGoogleHelpfulKnowledge(data.knowledge);
+      }
+    } catch (err) {
+      console.error('Error fetching Google Helpful status:', err);
+    } finally {
+      setLoadingGoogleHelpful(false);
     }
   };
 
@@ -105,6 +127,30 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
     } catch (err: any) {
       setEditorialSyncStatus('error');
       setEditorialSyncError('Gagal menghubungi server untuk memperbarui aturan editorial.');
+    }
+  };
+
+  const handleRefreshGoogleHelpful = async () => {
+    setGoogleHelpfulSyncStatus('syncing');
+    setGoogleHelpfulSyncError('');
+    try {
+      const res = await fetch('/api/refresh-google-helpful', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visitorKeys })
+      });
+      const data = await res.json();
+      if (data.success && data.knowledge) {
+        setGoogleHelpfulKnowledge(data.knowledge);
+        setGoogleHelpfulSyncStatus('success');
+        setTimeout(() => setGoogleHelpfulSyncStatus('idle'), 3000);
+      } else {
+        setGoogleHelpfulSyncStatus('error');
+        setGoogleHelpfulSyncError(data.error || 'Terjadi kesalahan saat menyelaraskan aturan Google Helpful Content.');
+      }
+    } catch (err: any) {
+      setGoogleHelpfulSyncStatus('error');
+      setGoogleHelpfulSyncError('Gagal menghubungi server untuk memperbarui aturan Google Helpful Content.');
     }
   };
 
@@ -474,6 +520,111 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
             <AlertCircle className="mx-auto h-8 w-8 text-yellow-500 mb-2" />
             <p className="font-semibold">Aturan Editorial George Kao belum terinisialisasi.</p>
             <p className="text-xs mt-1">Silakan klik tombol "Refresh Editorial Rules" di atas untuk menganalisis dan membangun basis aturan editorial.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Google Helpful Content Knowledge Builder Section */}
+      <div className="border-t border-gray-100 pt-8 mt-8" id="google-helpful-rules-section">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+          <div>
+            <h3 className="font-display text-lg font-bold text-gray-900 flex items-center gap-2">
+              <Database className="h-5 w-5 text-emerald-600" />
+              Google Helpful Content Knowledge Builder
+            </h3>
+            <p className="text-gray-500 text-sm mt-0.5">
+              Basis pengetahuan editorial penunjang konten berkualitas tinggi berdasarkan standar resmi Google Search Central.
+            </p>
+          </div>
+          <div>
+            <button
+              type="button"
+              id="btn-refresh-google-helpful"
+              disabled={googleHelpfulSyncStatus === 'syncing'}
+              onClick={handleRefreshGoogleHelpful}
+              className={`flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 text-sm font-semibold shadow-md transition-all cursor-pointer disabled:opacity-50`}
+            >
+              {googleHelpfulSyncStatus === 'syncing' ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              {googleHelpfulSyncStatus === 'syncing' ? 'Mempelajari Google Search...' : 'Refresh Google Knowledge'}
+            </button>
+          </div>
+        </div>
+
+        {googleHelpfulSyncError && (
+          <div className="flex items-center gap-1.5 rounded-lg bg-red-50 p-3 text-xs text-red-600 border border-red-100 mb-4 animate-fade-in">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{googleHelpfulSyncError}</span>
+          </div>
+        )}
+
+        {googleHelpfulSyncStatus === 'success' && (
+          <div className="flex items-center gap-1.5 rounded-lg bg-green-50 p-3 text-xs text-green-600 border border-green-100 mb-4 animate-fade-in">
+            <CheckCircle className="h-4 w-4 shrink-0" />
+            <span>Berhasil menyelaraskan aturan kepatuhan terbaru dari Google Search Central!</span>
+          </div>
+        )}
+
+        {loadingGoogleHelpful ? (
+          <div className="bg-white border border-gray-100 rounded-2xl p-8 shadow-sm flex flex-col items-center justify-center">
+            <Loader2 className="h-8 w-8 text-emerald-600 animate-spin mb-2" />
+            <p className="text-sm text-gray-500">Memuat status aturan Google Helpful Content...</p>
+          </div>
+        ) : googleHelpfulKnowledge ? (
+          <div className="space-y-4 animate-fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm bg-gray-50 rounded-2xl p-5 border border-gray-100">
+              <div>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Source</p>
+                <p className="text-gray-800 font-medium mt-1">{googleHelpfulKnowledge.metadata.source}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Source URL</p>
+                <a href={googleHelpfulKnowledge.metadata.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline font-medium block truncate mt-1">
+                  {googleHelpfulKnowledge.metadata.sourceUrl}
+                </a>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Knowledge Version</p>
+                <p className="text-gray-800 font-mono font-bold mt-1">{googleHelpfulKnowledge.metadata.version}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Last Synced</p>
+                <p className="text-gray-800 font-medium mt-1">{googleHelpfulKnowledge.metadata.lastSynced}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Total Rules</p>
+                  <p className="text-3xl font-black text-gray-900 mt-1">{googleHelpfulKnowledge.metadata.totalRules}</p>
+                </div>
+                <div className="h-12 w-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 font-black text-lg">TR</div>
+              </div>
+              <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Total Principles</p>
+                  <p className="text-3xl font-black text-gray-900 mt-1">{googleHelpfulKnowledge.metadata.totalPrinciples}</p>
+                </div>
+                <div className="h-12 w-12 bg-teal-50 rounded-xl flex items-center justify-center text-teal-600 font-black text-lg">TP</div>
+              </div>
+              <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Self Assessment Questions</p>
+                  <p className="text-3xl font-black text-gray-900 mt-1">{googleHelpfulKnowledge.metadata.totalSelfAssessmentQuestions}</p>
+                </div>
+                <div className="h-12 w-12 bg-sky-50 rounded-xl flex items-center justify-center text-sky-600 font-black text-lg">AQ</div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-6 text-center text-yellow-800 text-sm">
+            <AlertCircle className="mx-auto h-8 w-8 text-yellow-500 mb-2" />
+            <p className="font-semibold">Aturan Google Helpful Content belum terinisialisasi.</p>
+            <p className="text-xs mt-1">Silakan klik tombol "Refresh Google Knowledge" di atas untuk menganalisis dan membangun basis aturan Google Search Central.</p>
           </div>
         )}
       </div>

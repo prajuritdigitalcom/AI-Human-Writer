@@ -6,6 +6,7 @@ import { generateSEOArticle } from "./server/gemini.ts";
 import { StyleType } from "./src/types";
 import { initKnowledgeOnStartup, getStoredKnowledge, refreshWikipediaKnowledge } from "./server/wikipediaKnowledge.ts";
 import { initEditorialKnowledgeOnStartup, getStoredEditorialKnowledge, refreshEditorialKnowledge } from "./server/georgeKaoKnowledge.ts";
+import { initGoogleHelpfulKnowledgeOnStartup, getStoredGoogleHelpfulKnowledge, refreshGoogleHelpfulKnowledge } from "./server/googleHelpfulKnowledge.ts";
 
 
 // Load environment variables
@@ -154,6 +155,36 @@ app.post("/api/refresh-editorial", async (req, res) => {
   }
 });
 
+// API Routes for Google Helpful Content Knowledge Builder
+app.get("/api/google-helpful-status", (req, res) => {
+  try {
+    const knowledge = getStoredGoogleHelpfulKnowledge();
+    res.json({ success: true, knowledge });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || "Gagal memuat aturan Google Helpful Content." });
+  }
+});
+
+app.post("/api/refresh-google-helpful", async (req, res) => {
+  const { visitorKeys } = req.body;
+  try {
+    const activeKeys = resolveAllKeys(visitorKeys);
+    if (activeKeys.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Tidak ada API Key aktif untuk memproses pembaruan aturan Google Helpful Content. Tambahkan API Key di tab Pengaturan API terlebih dahulu."
+      });
+    }
+
+    console.log("[Google Helpful API] Refreshing Google Helpful Content rules...");
+    const refreshed = await refreshGoogleHelpfulKnowledge(activeKeys);
+    res.json({ success: true, knowledge: refreshed });
+  } catch (err: any) {
+    console.error("[Google Helpful API Error] Failed to refresh Google Helpful Content rules:", err.message || err);
+    res.status(500).json({ success: false, error: err.message || "Gagal menyelaraskan aturan dengan Google Search Central." });
+  }
+});
+
 async function startServer() {
   // Initialize Wikipedia compliance rules
   console.log("[Wikipedia Knowledge] Initializing Wikipedia Signs of AI Writing Compliance Rules...");
@@ -162,6 +193,10 @@ async function startServer() {
   // Initialize George Kao editorial rules
   console.log("[George Kao Knowledge] Initializing George Kao Editorial Knowledge...");
   initEditorialKnowledgeOnStartup();
+
+  // Initialize Google Helpful Content rules
+  console.log("[Google Helpful Knowledge] Initializing Google Helpful Content Knowledge...");
+  initGoogleHelpfulKnowledgeOnStartup();
 
 
   // Vite integration

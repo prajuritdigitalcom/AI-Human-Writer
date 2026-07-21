@@ -84,6 +84,39 @@ export interface GeneratedArticle {
     isOriginal: boolean;
     articleTitle: string;
   }[];
+  helpfulContentLog?: HelpfulContentLog;
+}
+
+export interface HelpfulContentLog {
+  knowledgeVersion: string;
+  evaluationResult: string;
+  validationResult: string;
+  revisionCount: number;
+  finalStatus: string;
+}
+
+export interface GoogleHelpfulMetadata {
+  source: string;
+  sourceUrl: string;
+  version: string;
+  lastSynced: string;
+  totalRules: number;
+  totalPrinciples: number;
+  totalSelfAssessmentQuestions: number;
+  generatedDate: string;
+}
+
+export interface StoredGoogleHelpfulKnowledge {
+  metadata: GoogleHelpfulMetadata;
+  helpfulContentPrinciples: string[];
+  peopleFirstPrinciples: string[];
+  reliabilityPrinciples: string[];
+  userSatisfactionPrinciples: string[];
+  experienceSignals: string[];
+  qualityEvaluationQuestions: string[];
+  contentReviewQuestions: string[];
+  searchIntentGuidance: string[];
+  readerValuePrinciples: string[];
 }
 
 export interface ApiSettings {

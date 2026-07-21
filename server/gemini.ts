@@ -2,6 +2,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { StyleType, AuditReport, GeneratedArticle, OverusedWordCheck, FAQItem, ImageMetadata } from "../src/types";
 import { getStoredKnowledge } from "./wikipediaKnowledge.ts";
 import { getStoredEditorialKnowledge } from "./georgeKaoKnowledge.ts";
+import { getStoredGoogleHelpfulKnowledge } from "./googleHelpfulKnowledge.ts";
 
 
 // Helper to split text into sentences
@@ -523,6 +524,147 @@ Return your response as a JSON object matching this schema:
     console.error("[Editorial Processing Engine Error] Editorial workflow failed, falling back to original draft:", err.message || err);
   }
 
+  // ==========================================
+  // GOOGLE HELPFUL CONTENT ENGINE
+  // ==========================================
+  console.log("[Google Helpful Content Engine] Launching Helpful Content Quality audit & evaluation...");
+  const googleHelpfulKnowledge = getStoredGoogleHelpfulKnowledge();
+  let googleHelpfulLogPayload: any = null;
+
+  try {
+    const helpfulPrinciples = googleHelpfulKnowledge.helpfulContentPrinciples.map((p, i) => `${i + 1}. ${p}`).join("\n");
+    const peopleFirstPrinciples = googleHelpfulKnowledge.peopleFirstPrinciples.map((p, i) => `${i + 1}. ${p}`).join("\n");
+    const reliabilityPrinciples = googleHelpfulKnowledge.reliabilityPrinciples.map((p, i) => `${i + 1}. ${p}`).join("\n");
+    const satisfactionPrinciples = googleHelpfulKnowledge.userSatisfactionPrinciples.map((p, i) => `${i + 1}. ${p}`).join("\n");
+    const experienceSignals = googleHelpfulKnowledge.experienceSignals.map((p, i) => `${i + 1}. ${p}`).join("\n");
+    const qualityQuestions = googleHelpfulKnowledge.qualityEvaluationQuestions.map((p, i) => `${i + 1}. ${p}`).join("\n");
+    const contentReviewQuestions = googleHelpfulKnowledge.contentReviewQuestions.map((p, i) => `${i + 1}. ${p}`).join("\n");
+    const searchIntentGuidance = googleHelpfulKnowledge.searchIntentGuidance.map((p, i) => `${i + 1}. ${p}`).join("\n");
+    const readerValuePrinciples = googleHelpfulKnowledge.readerValuePrinciples.map((p, i) => `${i + 1}. ${p}`).join("\n");
+
+    const googleHelpfulPrompt = `
+You are a highly experienced SEO Quality Auditor & Editor trained on Google Search Central's Helpful, Reliable, People-First Content guidelines.
+Your mission is to perform a rigorous quality evaluation and revision on the provided article draft (which has already passed Wikipedia compliance and George Kao editorial adjustments).
+
+---
+
+GOOGLE HELPFUL CONTENT KNOWLEDGE (MANDATORY TARGETS):
+1. Helpful Content Principles:
+${helpfulPrinciples}
+
+2. People-First Principles:
+${peopleFirstPrinciples}
+
+3. Reliability Principles:
+${reliabilityPrinciples}
+
+4. User Satisfaction Principles:
+${satisfactionPrinciples}
+
+5. Experience Signals:
+${experienceSignals}
+
+6. Quality Evaluation Questions:
+${qualityQuestions}
+
+7. Content Review Questions:
+${contentReviewQuestions}
+
+8. Search Intent Guidance:
+${searchIntentGuidance}
+
+9. Reader Value Principles:
+${readerValuePrinciples}
+
+---
+
+INPUT ARTICLE DRAFT:
+Title: ${currentArticlePayload?.title || keyword}
+Draft Content Markdown:
+"""
+${currentMarkdown}
+"""
+
+---
+
+YOUR TASK:
+1. Evaluate the draft thoroughly based on Google's actual questions and guidance above:
+   - Does it fully satisfy the searcher's query/intent? Is the explanation deep enough or too shallow?
+   - Does it provide substantial, complete, and comprehensive value compared to other search results?
+   - Is it written primarily for humans, demonstrating clear expertise and trustworthiness?
+   - Will the reader leave feeling satisfied and having learned enough?
+2. If there are any areas of improvement (e.g. sections that can be explained in more depth, more specific actionable details, or stronger human-first tone), refine or rewrite those specific sections to enrich them while keeping the rest of the text natural and clean.
+3. CRITICAL: You MUST naturally keep all headings, facts, and internal markdown links (${parsedLinks.map(l => l.title).join(', ')}) exactly intact and correct. Do NOT remove or modify URLs and titles of the internal links.
+
+---
+
+REQUIRED OUTPUT FORMAT (JSON ONLY):
+{
+  "evaluationResult": "A detailed 1-2 paragraph analytical report of the article's quality and helpfulness in Indonesian.",
+  "issuesDetected": ["List of issues found, such as 'Penjelasan di bagian X agak terlalu umum', or empty if none"],
+  "revisionRecommendations": ["List of revisions made to improve search intent, depth, or satisfaction, or empty if none"],
+  "finalHelpfulDraft": "The revised complete contentMarkdown after executing the Helpful Content Revision step. Ensure it remains valid markdown with headings, bolding, and the exact internal links."
+}
+`;
+
+    const { result: googleHelpfulResult } = await callGeminiWithRollingKeys(keys, async (ai) => {
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: googleHelpfulPrompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              evaluationResult: { type: Type.STRING },
+              issuesDetected: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING }
+              },
+              revisionRecommendations: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING }
+              },
+              finalHelpfulDraft: { type: Type.STRING }
+            },
+            required: ["evaluationResult", "issuesDetected", "revisionRecommendations", "finalHelpfulDraft"]
+          }
+        }
+      });
+
+      const text = response.text;
+      if (!text) {
+        throw new Error("Gemini returned an empty Google Helpful Response.");
+      }
+      return JSON.parse(text);
+    });
+
+    console.log("[Google Helpful Content Engine] Evaluation complete. Issues count:", googleHelpfulResult.issuesDetected.length);
+    console.log("[Google Helpful Content Engine] Evaluation Result:\n", googleHelpfulResult.evaluationResult);
+
+    if (googleHelpfulResult.finalHelpfulDraft && googleHelpfulResult.finalHelpfulDraft.trim().length > 100) {
+      currentMarkdown = googleHelpfulResult.finalHelpfulDraft;
+    }
+
+    googleHelpfulLogPayload = {
+      knowledgeVersion: googleHelpfulKnowledge.metadata.version,
+      evaluationResult: googleHelpfulResult.evaluationResult,
+      validationResult: googleHelpfulResult.issuesDetected.length > 0 ? "Revised" : "Passed",
+      revisionCount: googleHelpfulResult.issuesDetected.length > 0 ? 1 : 0,
+      finalStatus: "Completed"
+    };
+
+  } catch (err: any) {
+    console.error("[Google Helpful Content Engine Error] Workflow failed, falling back to current draft:", err.message || err);
+    googleHelpfulLogPayload = {
+      knowledgeVersion: googleHelpfulKnowledge.metadata.version,
+      evaluationResult: "Evaluasi gagal diproses karena kesalahan sistem. Namun draf artikel tetap aman.",
+      validationResult: "Skipped",
+      revisionCount: 0,
+      finalStatus: "Failed"
+    };
+  }
+
   // Calculate Keyword Density
   const lowercaseContent = currentMarkdown.toLowerCase();
   const lowercaseKeyword = keyword.toLowerCase();
@@ -584,7 +726,8 @@ Return your response as a JSON object matching this schema:
       evaluation: keywordDensityEvaluation
     },
     semanticKeywords: currentArticlePayload.semanticKeywords || [],
-    complianceHistory: complianceHistory
+    complianceHistory: complianceHistory,
+    helpfulContentLog: googleHelpfulLogPayload
   };
 }
 
