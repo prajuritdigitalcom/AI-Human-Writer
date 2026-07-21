@@ -329,22 +329,7 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
               })}
             </div>
 
-            <div className="bg-amber-50/40 border border-amber-100/50 rounded-xl p-4 text-xs text-amber-900 space-y-2">
-              <p className="font-bold text-amber-950 flex items-center gap-1.5">
-                <span>💡</span> Tips Deteksi API Keys di Vercel:
-              </p>
-              <ul className="list-disc pl-4 space-y-1 text-[11px] text-amber-800 leading-relaxed">
-                <li>
-                  <strong>Wajib Deploy Ulang (REDEPLOY):</strong> Setelah Anda menyimpan Environment Variables di Vercel Dashboard, Anda <strong>wajib melakukan Redeploy proyek Anda</strong> di Vercel. Server Vercel lama tidak akan membaca kunci baru sebelum di-deploy ulang.
-                </li>
-                <li>
-                  <strong>Ejaan Harus Tepat:</strong> Pastikan ejaan variabel lingkungan sama persis menggunakan huruf kapital, contoh: <code>GEMINI_KEY_1</code>, <code>GEMINI_KEY_2</code>, atau <code>GEMINI_KEY_3</code>.
-                </li>
-                <li>
-                  <strong>Pilih Lingkungan yang Tepat:</strong> Saat menambahkan variabel di Vercel, pastikan Anda mencentang pilihan <strong>Production</strong>, <strong>Preview</strong>, dan <strong>Development</strong> agar kunci terbaca di semua alamat web.
-                </li>
-              </ul>
-            </div>
+
           </div>
         ) : (
           <p className="text-xs text-gray-500">
