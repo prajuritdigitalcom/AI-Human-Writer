@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Key, Plus, Trash2, Eye, EyeOff, CheckCircle, HelpCircle, AlertCircle, Database, RefreshCw, Loader2 } from 'lucide-react';
 import { StoredKnowledge, StoredEditorialKnowledge, StoredGoogleHelpfulKnowledge } from '../types';
+import { 
+  getClientWikipediaKnowledge, 
+  getClientEditorialKnowledge, 
+  getClientGoogleHelpfulKnowledge,
+  refreshWikipediaClientSide,
+  refreshGeorgeKaoClientSide,
+  refreshGoogleHelpfulClientSide
+} from '../lib/clientFallbackService';
 
 interface ApiSettingsViewProps {
   visitorKeys: string[];
@@ -44,9 +52,12 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
       const data = await res.json();
       if (data.success && data.knowledge) {
         setKnowledge(data.knowledge);
+      } else {
+        setKnowledge(getClientWikipediaKnowledge());
       }
     } catch (err) {
-      console.error('Error fetching knowledge status:', err);
+      console.warn('Error fetching knowledge status, loading from local storage:', err);
+      setKnowledge(getClientWikipediaKnowledge());
     } finally {
       setLoadingKnowledge(false);
     }
@@ -59,9 +70,12 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
       const data = await res.json();
       if (data.success && data.knowledge) {
         setEditorialKnowledge(data.knowledge);
+      } else {
+        setEditorialKnowledge(getClientEditorialKnowledge());
       }
     } catch (err) {
-      console.error('Error fetching editorial status:', err);
+      console.warn('Error fetching editorial status, loading from local storage:', err);
+      setEditorialKnowledge(getClientEditorialKnowledge());
     } finally {
       setLoadingEditorial(false);
     }
@@ -74,9 +88,12 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
       const data = await res.json();
       if (data.success && data.knowledge) {
         setGoogleHelpfulKnowledge(data.knowledge);
+      } else {
+        setGoogleHelpfulKnowledge(getClientGoogleHelpfulKnowledge());
       }
     } catch (err) {
-      console.error('Error fetching Google Helpful status:', err);
+      console.warn('Error fetching Google Helpful status, loading from local storage:', err);
+      setGoogleHelpfulKnowledge(getClientGoogleHelpfulKnowledge());
     } finally {
       setLoadingGoogleHelpful(false);
     }
@@ -97,12 +114,19 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
         setSyncStatus('success');
         setTimeout(() => setSyncStatus('idle'), 3000);
       } else {
-        setSyncStatus('error');
-        setSyncError(data.error || 'Terjadi kesalahan saat menyelaraskan aturan.');
+        throw new Error(data.error || 'Server returned failure');
       }
     } catch (err: any) {
-      setSyncStatus('error');
-      setSyncError('Gagal menghubungi server untuk memperbarui aturan.');
+      console.warn('Backend refresh failed. Running client-side fallback extraction...', err);
+      try {
+        const localData = await refreshWikipediaClientSide(visitorKeys);
+        setKnowledge(localData);
+        setSyncStatus('success');
+        setTimeout(() => setSyncStatus('idle'), 3000);
+      } catch (localErr: any) {
+        setSyncStatus('error');
+        setSyncError(localErr.message || 'Gagal menyelaraskan aturan kepatuhan Wikipedia secara lokal.');
+      }
     }
   };
 
@@ -121,12 +145,19 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
         setEditorialSyncStatus('success');
         setTimeout(() => setEditorialSyncStatus('idle'), 3000);
       } else {
-        setEditorialSyncStatus('error');
-        setEditorialSyncError(data.error || 'Terjadi kesalahan saat menyelaraskan aturan editorial.');
+        throw new Error(data.error || 'Server returned failure');
       }
     } catch (err: any) {
-      setEditorialSyncStatus('error');
-      setEditorialSyncError('Gagal menghubungi server untuk memperbarui aturan editorial.');
+      console.warn('Backend editorial refresh failed. Running client-side fallback...', err);
+      try {
+        const localData = await refreshGeorgeKaoClientSide(visitorKeys);
+        setEditorialKnowledge(localData);
+        setEditorialSyncStatus('success');
+        setTimeout(() => setEditorialSyncStatus('idle'), 3000);
+      } catch (localErr: any) {
+        setEditorialSyncStatus('error');
+        setEditorialSyncError(localErr.message || 'Gagal menyelaraskan aturan editorial George Kao secara lokal.');
+      }
     }
   };
 
@@ -145,12 +176,19 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
         setGoogleHelpfulSyncStatus('success');
         setTimeout(() => setGoogleHelpfulSyncStatus('idle'), 3000);
       } else {
-        setGoogleHelpfulSyncStatus('error');
-        setGoogleHelpfulSyncError(data.error || 'Terjadi kesalahan saat menyelaraskan aturan Google Helpful Content.');
+        throw new Error(data.error || 'Server returned failure');
       }
     } catch (err: any) {
-      setGoogleHelpfulSyncStatus('error');
-      setGoogleHelpfulSyncError('Gagal menghubungi server untuk memperbarui aturan Google Helpful Content.');
+      console.warn('Backend Google Helpful refresh failed. Running client-side fallback...', err);
+      try {
+        const localData = await refreshGoogleHelpfulClientSide(visitorKeys);
+        setGoogleHelpfulKnowledge(localData);
+        setGoogleHelpfulSyncStatus('success');
+        setTimeout(() => setGoogleHelpfulSyncStatus('idle'), 3000);
+      } catch (localErr: any) {
+        setGoogleHelpfulSyncStatus('error');
+        setGoogleHelpfulSyncError(localErr.message || 'Gagal menyelaraskan aturan Google Helpful secara lokal.');
+      }
     }
   };
 

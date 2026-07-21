@@ -5,6 +5,7 @@ import ApiSettingsView from './components/ApiSettingsView';
 import PreviewView from './components/PreviewView';
 import HistoryView, { HistoryItem } from './components/HistoryView';
 import { GeneratorInput, GeneratedArticle } from './types';
+import { generateArticleClientSide } from './lib/clientFallbackService';
 
 type TabId = 'generator' | 'preview' | 'history' | 'settings';
 
@@ -139,24 +140,35 @@ export default function App() {
     setActiveTab('generator'); // stay on generator tab to show the loading screen
 
     try {
-      const response = await fetch('/api/generate-article', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          ...input,
-          visitorKeys
-        })
-      });
+      let generated: GeneratedArticle;
+      
+      try {
+        const response = await fetch('/api/generate-article', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            ...input,
+            visitorKeys
+          })
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Gagal menghasilkan artikel.');
+        if (!response.ok) {
+          throw new Error(data.error || 'Gagal menghasilkan artikel.');
+        }
+        
+        generated = data;
+      } catch (serverErr: any) {
+        console.warn("Backend generation failed, trying client-side fallback with user's key:", serverErr);
+        if (!visitorKeys || visitorKeys.length === 0) {
+          throw new Error("Gagal menghubungi server dan tidak ada API Key lokal yang disetel di tab Pengaturan API sebagai cadangan.");
+        }
+        generated = await generateArticleClientSide(input, visitorKeys);
       }
 
-      const generated: GeneratedArticle = data;
       setArticle(generated);
       setError(null);
 
