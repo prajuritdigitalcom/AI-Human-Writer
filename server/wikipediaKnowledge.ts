@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { GoogleGenAI, Type } from "@google/genai";
-import { StoredKnowledge } from "../src/types";
+import { StoredKnowledge } from "../src/types.js";
 
 const KNOWLEDGE_DIR = path.join(process.cwd(), "knowledge");
 const KNOWLEDGE_FILE_PATH = path.join(KNOWLEDGE_DIR, "compliance-rules.json");

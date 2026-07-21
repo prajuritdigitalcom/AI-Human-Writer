@@ -1,8 +1,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { StyleType, AuditReport, GeneratedArticle, OverusedWordCheck, FAQItem, ImageMetadata } from "../src/types";
-import { getStoredKnowledge } from "./wikipediaKnowledge.ts";
-import { getStoredEditorialKnowledge } from "./georgeKaoKnowledge.ts";
-import { getStoredGoogleHelpfulKnowledge } from "./googleHelpfulKnowledge.ts";
+import { StyleType, AuditReport, GeneratedArticle, OverusedWordCheck, FAQItem, ImageMetadata } from "../src/types.js";
+import { getStoredKnowledge } from "./wikipediaKnowledge.js";
+import { getStoredEditorialKnowledge } from "./georgeKaoKnowledge.js";
+import { getStoredGoogleHelpfulKnowledge } from "./googleHelpfulKnowledge.js";
 
 
 // Helper to split text into sentences

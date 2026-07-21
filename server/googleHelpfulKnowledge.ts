@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { GoogleGenAI, Type } from "@google/genai";
-import { StoredGoogleHelpfulKnowledge } from "../src/types";
+import { StoredGoogleHelpfulKnowledge } from "../src/types.js";
 
 const KNOWLEDGE_DIR = path.join(process.cwd(), "knowledge");
 const JSON_FILE_PATH = path.join(KNOWLEDGE_DIR, "google-helpful-content.json");

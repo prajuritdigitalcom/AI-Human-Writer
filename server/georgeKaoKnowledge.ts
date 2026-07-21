@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { GoogleGenAI, Type } from "@google/genai";
-import { StoredEditorialKnowledge } from "../src/types";
+import { StoredEditorialKnowledge } from "../src/types.js";
 
 const KNOWLEDGE_DIR = path.join(process.cwd(), "knowledge");
 const EDITORIAL_FILE_PATH = path.join(KNOWLEDGE_DIR, "editorial-rules.json");
