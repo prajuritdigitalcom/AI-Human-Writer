@@ -39,11 +39,29 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
   const [googleHelpfulSyncStatus, setGoogleHelpfulSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [googleHelpfulSyncError, setGoogleHelpfulSyncError] = useState('');
 
+  // Server diagnostics states
+  const [diagnostics, setDiagnostics] = useState<any>(null);
+  const [loadingDiagnostics, setLoadingDiagnostics] = useState(false);
+
   useEffect(() => {
     fetchKnowledgeStatus();
     fetchEditorialStatus();
     fetchGoogleHelpfulStatus();
+    fetchDiagnostics();
   }, []);
+
+  const fetchDiagnostics = async () => {
+    setLoadingDiagnostics(true);
+    try {
+      const res = await fetch('/api/admin-status');
+      const data = await res.json();
+      setDiagnostics(data);
+    } catch (err) {
+      console.warn('Gagal memuat status diagnostik admin keys:', err);
+    } finally {
+      setLoadingDiagnostics(false);
+    }
+  };
 
   const fetchKnowledgeStatus = async () => {
     setLoadingKnowledge(true);
@@ -237,10 +255,104 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
 
   return (
     <div className="space-y-8 animate-fade-in" id="api-settings-view">
-      <div className="pb-4">
-        <h2 className="font-display text-2xl font-bold text-gray-900">Pengaturan API Keys</h2>
-        <p className="text-gray-500 text-sm">Kelola API Keys Anda untuk proses penulisan tanpa batas kuota.</p>
+      <div className="pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="font-display text-2xl font-bold text-gray-900">Pengaturan API Keys</h2>
+          <p className="text-gray-500 text-sm">Kelola API Keys Anda untuk proses penulisan tanpa batas kuota.</p>
+        </div>
+        <button
+          onClick={fetchDiagnostics}
+          disabled={loadingDiagnostics}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 cursor-pointer disabled:opacity-50"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${loadingDiagnostics ? 'animate-spin text-primary' : 'text-gray-500'}`} />
+          <span>Cek Ulang Server</span>
+        </button>
       </div>
+
+      {/* Cloud Server Diagnostics Section */}
+      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-50 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-primary-light flex items-center justify-center text-primary">
+              <Database className="h-4.5 w-4.5" />
+            </div>
+            <div>
+              <h3 className="font-display text-sm font-bold text-gray-900">Diagnostik Cloud Server (Vercel)</h3>
+              <p className="text-[11px] text-gray-400">Status pendeteksian API Keys di sisi server Vercel.</p>
+            </div>
+          </div>
+          <div>
+            {loadingDiagnostics ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-500 border border-gray-100">
+                <Loader2 className="h-3 w-3 animate-spin text-gray-400" />
+                <span>Memindai...</span>
+              </span>
+            ) : diagnostics ? (
+              diagnostics.hasAdminKeys ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700 border border-green-100 animate-pulse">
+                  <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                  <span>{diagnostics.adminKeysCount} Server Key Aktif</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700 border border-red-100">
+                  <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                  <span>0 Server Key Terdeteksi</span>
+                </span>
+              )
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-50 px-3 py-1 text-xs font-bold text-yellow-700 border border-yellow-100">
+                <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
+                <span>Gagal Terhubung</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {diagnostics && diagnostics.diagnostics ? (
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {Object.entries(diagnostics.diagnostics.envVarsFound).map(([key, val]: any) => {
+                const exists = val !== "Not found" && !val.includes("Not found");
+                return (
+                  <div key={key} className={`p-3 rounded-xl border text-xs flex flex-col justify-between space-y-1.5 ${exists ? 'bg-green-50/30 border-green-100/70' : 'bg-gray-50/30 border-gray-100'}`}>
+                    <div className="font-mono font-bold text-gray-700">{key}</div>
+                    <div className={`font-medium ${exists ? 'text-green-700' : 'text-gray-400'}`}>
+                      {exists ? (
+                        <span className="block truncate" title={val}>{val.replace("Exists ", "")}</span>
+                      ) : (
+                        <span>Tidak diatur (Kosong)</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="bg-amber-50/40 border border-amber-100/50 rounded-xl p-4 text-xs text-amber-900 space-y-2">
+              <p className="font-bold text-amber-950 flex items-center gap-1.5">
+                <span>💡</span> Tips Deteksi API Keys di Vercel:
+              </p>
+              <ul className="list-disc pl-4 space-y-1 text-[11px] text-amber-800 leading-relaxed">
+                <li>
+                  <strong>Wajib Deploy Ulang (REDEPLOY):</strong> Setelah Anda menyimpan Environment Variables di Vercel Dashboard, Anda <strong>wajib melakukan Redeploy proyek Anda</strong> di Vercel. Server Vercel lama tidak akan membaca kunci baru sebelum di-deploy ulang.
+                </li>
+                <li>
+                  <strong>Ejaan Harus Tepat:</strong> Pastikan ejaan variabel lingkungan sama persis menggunakan huruf kapital, contoh: <code>GEMINI_KEY_1</code>, <code>GEMINI_KEY_2</code>, atau <code>GEMINI_KEY_3</code>.
+                </li>
+                <li>
+                  <strong>Pilih Lingkungan yang Tepat:</strong> Saat menambahkan variabel di Vercel, pastikan Anda mencentang pilihan <strong>Production</strong>, <strong>Preview</strong>, dan <strong>Development</strong> agar kunci terbaca di semua alamat web.
+                </li>
+              </ul>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-gray-500">
+            Sedang mencoba mengambil informasi diagnostik server. Pastikan server aktif dan dapat merespons.
+          </p>
+        )}
+      </div>
+
       <div className="grid gap-8 md:grid-cols-3">
         {/* Left column: input key form */}
         <div className="md:col-span-1 space-y-4">

@@ -84,12 +84,54 @@ app.post("/api/generate-article", async (req, res) => {
 // Admin status API route to check how many admin keys are loaded (without exposing them)
 app.get("/api/admin-status", (req, res) => {
   const adminKeys = resolveAllKeys([]);
+  
+  // Mask keys for secure diagnostics in log and response
+  const envVarsFound: Record<string, string> = {};
+  
+  if (process.env.GEMINI_API_KEY) {
+    const val = process.env.GEMINI_API_KEY;
+    envVarsFound["GEMINI_API_KEY"] = `Exists (Length: ${val.length}, Starts with: ${val.substring(0, 4)}..., Ends with: ...${val.substring(val.length - 4)})`;
+  } else {
+    envVarsFound["GEMINI_API_KEY"] = "Not found";
+  }
+  
+  for (let i = 1; i <= 50; i++) {
+    const keyName = `GEMINI_KEY_${i}`;
+    const val = process.env[keyName];
+    if (val) {
+      envVarsFound[keyName] = `Exists (Length: ${val.length}, Starts with: ${val.substring(0, 4)}..., Ends with: ...${val.substring(val.length - 4)})`;
+    } else {
+      envVarsFound[keyName] = "Not found";
+    }
+  }
+
+  const vercelEnv = {
+    VERCEL: process.env.VERCEL,
+    VERCEL_ENV: process.env.VERCEL_ENV,
+    NODE_ENV: process.env.NODE_ENV,
+    cwd: process.cwd()
+  };
+
+  console.log("[Diagnostic Keys Load] Status of environment keys:");
+  Object.entries(envVarsFound).forEach(([k, v]) => {
+    if (v !== "Not found" || k === "GEMINI_KEY_1" || k === "GEMINI_KEY_2" || k === "GEMINI_KEY_3") {
+      console.log(`  - ${k}: ${v}`);
+    }
+  });
+
   res.json({
     hasAdminKeys: adminKeys.length > 0,
     adminKeysCount: adminKeys.length,
     loadedFrom: {
       GEMINI_API_KEY: !!process.env.GEMINI_API_KEY,
       rollingKeysCount: Array.from({ length: 50 }).filter((_, i) => !!process.env[`GEMINI_KEY_${i + 1}`]).length
+    },
+    diagnostics: {
+      envVarsFound: Object.fromEntries(
+        Object.entries(envVarsFound).filter(([k, v]) => v !== "Not found" || k === "GEMINI_KEY_1" || k === "GEMINI_KEY_2" || k === "GEMINI_KEY_3")
+      ),
+      vercelEnv,
+      adminKeysCountResolved: adminKeys.length
     }
   });
 });
@@ -185,30 +227,48 @@ app.post("/api/refresh-google-helpful", async (req, res) => {
 });
 
 async function startServer() {
-  // Initialize Wikipedia compliance rules
-  console.log("[Wikipedia Knowledge] Initializing Wikipedia Signs of AI Writing Compliance Rules...");
-  initKnowledgeOnStartup();
+  try {
+    // Initialize Wikipedia compliance rules
+    console.log("[Wikipedia Knowledge] Initializing Wikipedia Signs of AI Writing Compliance Rules...");
+    initKnowledgeOnStartup();
+  } catch (err: any) {
+    console.error("[Wikipedia Knowledge Init Error]:", err.message || err);
+  }
 
-  // Initialize George Kao editorial rules
-  console.log("[George Kao Knowledge] Initializing George Kao Editorial Knowledge...");
-  initEditorialKnowledgeOnStartup();
+  try {
+    // Initialize George Kao editorial rules
+    console.log("[George Kao Knowledge] Initializing George Kao Editorial Knowledge...");
+    initEditorialKnowledgeOnStartup();
+  } catch (err: any) {
+    console.error("[George Kao Knowledge Init Error]:", err.message || err);
+  }
 
-  // Initialize Google Helpful Content rules
-  console.log("[Google Helpful Knowledge] Initializing Google Helpful Content Knowledge...");
-  initGoogleHelpfulKnowledgeOnStartup();
+  try {
+    // Initialize Google Helpful Content rules
+    console.log("[Google Helpful Knowledge] Initializing Google Helpful Content Knowledge...");
+    initGoogleHelpfulKnowledgeOnStartup();
+  } catch (err: any) {
+    console.error("[Google Helpful Knowledge Init Error]:", err.message || err);
+  }
 
 
-  // Vite integration
-  if (process.env.NODE_ENV !== "production") {
+  // Vite integration - Skip completely if running on Vercel (Vercel CDN serves static assets)
+  if (process.env.VERCEL === "1") {
+    console.log("[Server] Running on VERCEL. Skipping static file routing and Vite server middleware.");
+  } else if (process.env.NODE_ENV !== "production") {
     console.log("Starting server in DEVELOPMENT mode with Vite middleware...");
-    const { createServer: createViteServer } = await import("vite");
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
+    try {
+      const { createServer: createViteServer } = await import("vite");
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      });
+      app.use(vite.middlewares);
+    } catch (err: any) {
+      console.error("[Vite Dev Server Init Error]:", err.message || err);
+    }
   } else {
-    console.log("Starting server in PRODUCTION mode...");
+    console.log("Starting server in PRODUCTION mode (non-Vercel)...");
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
@@ -223,6 +283,8 @@ async function startServer() {
   }
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error("[Critical Server Startup Error]:", err);
+});
 
 export default app;
