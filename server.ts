@@ -1,11 +1,11 @@
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
-import { generateSEOArticle } from "./server/gemini.ts";
+import { generateSEOArticle } from "./server/gemini";
 import { StyleType } from "./src/types";
-import { initKnowledgeOnStartup, getStoredKnowledge, refreshWikipediaKnowledge } from "./server/wikipediaKnowledge.ts";
-import { initEditorialKnowledgeOnStartup, getStoredEditorialKnowledge, refreshEditorialKnowledge } from "./server/georgeKaoKnowledge.ts";
-import { initGoogleHelpfulKnowledgeOnStartup, getStoredGoogleHelpfulKnowledge, refreshGoogleHelpfulKnowledge } from "./server/googleHelpfulKnowledge.ts";
+import { initKnowledgeOnStartup, getStoredKnowledge, refreshWikipediaKnowledge } from "./server/wikipediaKnowledge";
+import { initEditorialKnowledgeOnStartup, getStoredEditorialKnowledge, refreshEditorialKnowledge } from "./server/georgeKaoKnowledge";
+import { initGoogleHelpfulKnowledgeOnStartup, getStoredGoogleHelpfulKnowledge, refreshGoogleHelpfulKnowledge } from "./server/googleHelpfulKnowledge";
 
 
 // Load environment variables
