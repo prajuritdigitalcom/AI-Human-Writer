@@ -62,8 +62,12 @@ const DEFAULT_SEED_KNOWLEDGE: StoredKnowledge = {
 
 // Ensure directory exists
 function ensureKnowledgeDirectory() {
-  if (!fs.existsSync(KNOWLEDGE_DIR)) {
-    fs.mkdirSync(KNOWLEDGE_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(KNOWLEDGE_DIR)) {
+      fs.mkdirSync(KNOWLEDGE_DIR, { recursive: true });
+    }
+  } catch (err: any) {
+    console.warn("[Wikipedia Knowledge] Could not create knowledge directory (read-only filesystem expected):", err.message);
   }
 }
 
@@ -111,8 +115,12 @@ async function fetchWikipediaText(): Promise<string> {
 // Write the knowledge file
 export function writeKnowledgeToDisk(data: StoredKnowledge) {
   ensureKnowledgeDirectory();
-  fs.writeFileSync(KNOWLEDGE_FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
-  console.log(`[Wikipedia Knowledge] Wrote rules to ${KNOWLEDGE_FILE_PATH}`);
+  try {
+    fs.writeFileSync(KNOWLEDGE_FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
+    console.log(`[Wikipedia Knowledge] Wrote rules to ${KNOWLEDGE_FILE_PATH}`);
+  } catch (err: any) {
+    console.warn("[Wikipedia Knowledge] Could not write rules to disk (read-only filesystem expected):", err.message);
+  }
 }
 
 // Initialize the knowledge file on startup (with seed if file missing)

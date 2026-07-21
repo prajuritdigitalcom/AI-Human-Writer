@@ -83,8 +83,12 @@ const DEFAULT_SEED_GOOGLE_HELPFUL: StoredGoogleHelpfulKnowledge = {
 };
 
 function ensureKnowledgeDirectory() {
-  if (!fs.existsSync(KNOWLEDGE_DIR)) {
-    fs.mkdirSync(KNOWLEDGE_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(KNOWLEDGE_DIR)) {
+      fs.mkdirSync(KNOWLEDGE_DIR, { recursive: true });
+    }
+  } catch (err: any) {
+    console.warn("[Google Helpful Knowledge] Could not create knowledge directory (read-only filesystem expected):", err.message);
   }
 }
 
@@ -131,8 +135,12 @@ export function writeGoogleHelpfulKnowledgeToDisk(data: StoredGoogleHelpfulKnowl
   ensureKnowledgeDirectory();
   
   // 1. Write JSON
-  fs.writeFileSync(JSON_FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
-  console.log(`[Google Helpful Knowledge] Saved JSON rules to ${JSON_FILE_PATH}`);
+  try {
+    fs.writeFileSync(JSON_FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
+    console.log(`[Google Helpful Knowledge] Saved JSON rules to ${JSON_FILE_PATH}`);
+  } catch (err: any) {
+    console.warn("[Google Helpful Knowledge] Could not write JSON rules to disk (read-only filesystem expected):", err.message);
+  }
 
   // 2. Generate and Write beautiful Markdown
   const mdContent = `# Google Search Central: Creating Helpful, Reliable, People-First Content
@@ -200,8 +208,12 @@ ${data.readerValuePrinciples.map(p => `- ${p}`).join("\n")}
 *Disimpan secara lokal oleh AI Human Writer Knowledge Builder.*
 `;
 
-  fs.writeFileSync(MD_FILE_PATH, mdContent, "utf-8");
-  console.log(`[Google Helpful Knowledge] Saved human-readable Markdown documentation to ${MD_FILE_PATH}`);
+  try {
+    fs.writeFileSync(MD_FILE_PATH, mdContent, "utf-8");
+    console.log(`[Google Helpful Knowledge] Saved human-readable Markdown documentation to ${MD_FILE_PATH}`);
+  } catch (err: any) {
+    console.warn("[Google Helpful Knowledge] Could not write Markdown rules to disk (read-only filesystem expected):", err.message);
+  }
 }
 
 export function initGoogleHelpfulKnowledgeOnStartup(): StoredGoogleHelpfulKnowledge {

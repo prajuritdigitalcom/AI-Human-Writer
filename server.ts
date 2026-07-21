@@ -1,7 +1,6 @@
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
-import { createServer as createViteServer } from "vite";
 import { generateSEOArticle } from "./server/gemini.ts";
 import { StyleType } from "./src/types";
 import { initKnowledgeOnStartup, getStoredKnowledge, refreshWikipediaKnowledge } from "./server/wikipediaKnowledge.ts";
@@ -202,6 +201,7 @@ async function startServer() {
   // Vite integration
   if (process.env.NODE_ENV !== "production") {
     console.log("Starting server in DEVELOPMENT mode with Vite middleware...");
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",

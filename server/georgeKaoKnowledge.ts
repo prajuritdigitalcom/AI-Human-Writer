@@ -41,8 +41,12 @@ const DEFAULT_SEED_EDITORIAL: StoredEditorialKnowledge = {
 };
 
 function ensureKnowledgeDirectory() {
-  if (!fs.existsSync(KNOWLEDGE_DIR)) {
-    fs.mkdirSync(KNOWLEDGE_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(KNOWLEDGE_DIR)) {
+      fs.mkdirSync(KNOWLEDGE_DIR, { recursive: true });
+    }
+  } catch (err: any) {
+    console.warn("[George Kao Knowledge] Could not create knowledge directory (read-only filesystem expected):", err.message);
   }
 }
 
@@ -87,8 +91,12 @@ async function fetchSubstackText(): Promise<string> {
 
 export function writeEditorialKnowledgeToDisk(data: StoredEditorialKnowledge) {
   ensureKnowledgeDirectory();
-  fs.writeFileSync(EDITORIAL_FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
-  console.log(`[George Kao Knowledge] Wrote rules to ${EDITORIAL_FILE_PATH}`);
+  try {
+    fs.writeFileSync(EDITORIAL_FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
+    console.log(`[George Kao Knowledge] Wrote rules to ${EDITORIAL_FILE_PATH}`);
+  } catch (err: any) {
+    console.warn("[George Kao Knowledge] Could not write rules to disk (read-only filesystem expected):", err.message);
+  }
 }
 
 export function initEditorialKnowledgeOnStartup(): StoredEditorialKnowledge {
