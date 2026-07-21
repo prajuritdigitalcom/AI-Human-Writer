@@ -1,0 +1,6 @@
+{
+  "name": "AI Human Writer",
+  "description": "An advanced, full-stack SEO article generator using Gemini with Multi API Keys rolling and a Wikipedia Signs of AI compliance engine to produce natural, human-like content.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
