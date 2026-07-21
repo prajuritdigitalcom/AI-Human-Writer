@@ -221,7 +221,7 @@ export function saveClientGoogleHelpfulKnowledge(data: StoredGoogleHelpfulKnowle
 // ==========================================
 
 export async function callGeminiClientDirect(prompt: string, apiKey: string, jsonSchema?: any): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
   
   const requestBody: any = {
     contents: [
