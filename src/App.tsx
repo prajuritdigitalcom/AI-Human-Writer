@@ -16,7 +16,7 @@ export default function App() {
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [adminKeysCount, setAdminKeysCount] = useState<number>(9);
+  const [adminKeysCount, setAdminKeysCount] = useState<number>(0);
   
   // Custom progressive loading steps for engaging visual feedback
   const [loadingStep, setLoadingStep] = useState(0);
@@ -57,7 +57,10 @@ export default function App() {
           setAdminKeysCount(data.adminKeysCount);
         }
       })
-      .catch(err => console.error("Gagal memuat status admin keys:", err));
+      .catch(err => {
+        console.error("Gagal memuat status admin keys:", err);
+        setAdminKeysCount(0);
+      });
   }, []);
 
   // Update visitor keys
