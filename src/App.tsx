@@ -4,6 +4,7 @@ import GeneratorView from './components/GeneratorView';
 import ApiSettingsView from './components/ApiSettingsView';
 import PreviewView from './components/PreviewView';
 import HistoryView, { HistoryItem } from './components/HistoryView';
+import PasswordModal from './components/PasswordModal';
 import { GeneratorInput, GeneratedArticle } from './types';
 import { generateArticleClientSide } from './lib/clientFallbackService';
 
@@ -17,6 +18,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [adminKeysCount, setAdminKeysCount] = useState<number>(0);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   
   // Custom progressive loading steps for engaging visual feedback
   const [loadingStep, setLoadingStep] = useState(0);
@@ -33,8 +35,14 @@ export default function App() {
     "Memvalidasi densitas kata kunci & menyusun skema JSON-LD..."
   ];
 
-  // Load state from LocalStorage on mount
+  // Load state from LocalStorage and check authentication status on mount
   useEffect(() => {
+    // Check session authentication status
+    const isAuth = sessionStorage.getItem('prajurit_digital_auth');
+    if (isAuth === 'true') {
+      setIsAuthenticated(true);
+    }
+
     try {
       const storedKeys = localStorage.getItem('ai_human_writer_visitor_keys');
       if (storedKeys) {
@@ -196,7 +204,14 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row font-sans text-gray-800">
+    <div className={`min-h-screen bg-gray-50 flex flex-col md:flex-row font-sans text-gray-800 ${!isAuthenticated ? 'overflow-hidden max-h-screen pointer-events-none select-none blur-xs' : ''}`}>
+      
+      {/* PASSWORD LOCK MODAL - SECURE ACCESS POPUP */}
+      {!isAuthenticated && (
+        <div className="pointer-events-auto select-auto">
+          <PasswordModal onSuccess={() => setIsAuthenticated(true)} />
+        </div>
+      )}
       
       {/* LEFT SIDEBAR - DESKTOP ONLY */}
       <aside className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 md:left-0 bg-white shadow-sm z-30 select-none border-r border-gray-100">

@@ -44,6 +44,31 @@ function resolveAllKeys(visitorKeys: string[] = []): string[] {
   return adminKeys;
 }
 
+// Password verification API endpoint (Secure Server-Side Check)
+app.post("/api/verify-password", (req, res) => {
+  const { password } = req.body;
+  
+  // Read password from environment variables (APP_PASSWORD or PASSWORD set in Vercel/env) or fallback default
+  const targetPassword = process.env.APP_PASSWORD || process.env.PASSWORD || "artikel@prajuritdigital.com";
+
+  if (!password || typeof password !== "string") {
+    return res.status(400).json({ success: false, error: "Password tidak boleh kosong." });
+  }
+
+  if (password.trim() === targetPassword.trim()) {
+    return res.json({
+      success: true,
+      token: "prajurit_digital_authenticated_" + Date.now(),
+      message: "Akses berhasil diverifikasi."
+    });
+  }
+
+  return res.status(401).json({
+    success: false,
+    error: "Password salah. Silakan periksa password Anda dan coba lagi."
+  });
+});
+
 // API Route for article generation
 app.post("/api/generate-article", async (req, res) => {
   const { focusKeyword, style, referenceInfo, imageUrl, internalLinks, visitorKeys } = req.body;
