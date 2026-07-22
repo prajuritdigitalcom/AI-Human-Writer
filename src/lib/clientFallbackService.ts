@@ -1,4 +1,5 @@
 import { StoredKnowledge, StoredEditorialKnowledge, StoredGoogleHelpfulKnowledge, StoredSemanticHtmlKnowledge, GeneratedArticle, GeneratorInput, FAQItem, ImageMetadata, HelpfulContentLog, SemanticHtmlLog, StyleType } from "../types";
+import { marked } from "marked";
 
 // ==========================================
 // 1. DEFAULT SEEDS FOR CLIENT SIDE
@@ -666,37 +667,27 @@ Format your output EXACTLY as this JSON schema:
   return data;
 }
 
-// Simple helper to convert markdown to basic HTML for preview visual rendering
+// Robust Markdown parser using marked library for clean semantic HTML
 function convertMarkdownToHtml(markdown: string): string {
-  let html = markdown;
-  // Replace headers (H3 down to H1 to avoid header styling clash)
-  html = html.replace(/^### (.*?)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^## (.*?)$/gm, '<h2>$1</h2>');
-  html = html.replace(/^# (.*?)$/gm, '<h1>$1</h1>');
+  if (!markdown) return '';
   
-  // Replace bold/italic
-  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-  
-  // Replace blockquotes
-  html = html.replace(/^> (.*?)$/gm, '<blockquote>$1</blockquote>');
-  
-  // Replace lists
-  html = html.replace(/^\s*-\s+(.*?)$/gm, '<li>$1</li>');
-  html = html.replace(/^\s*\d+\.\s+(.*?)$/gm, '<li>$1</li>');
-  html = html.replace(/(<li>.*?<\/li>)+/gs, (match) => `<ul>${match}</ul>`);
-  
-  const lines = html.split('\n');
-  const processedLines = lines.map(line => {
-    const trimmed = line.trim();
-    if (!trimmed) return '';
-    if (trimmed.startsWith('<h') || trimmed.startsWith('<ul') || trimmed.startsWith('<li') || trimmed.startsWith('<block') || trimmed.startsWith('</block')) {
-      return line;
-    }
-    return `<p>${line}</p>`;
-  });
-  
-  return processedLines.filter(Boolean).join('\n');
+  let clean = markdown.replace(/\r/g, '').trim();
+  clean = clean.replace(/^```[a-zA-Z]*\n/gi, '').replace(/\n```$/g, '').trim();
+
+  // Fix common AI inline-heading patterns:
+  // 1. `1. **Heading Title** Paragraph description...` -> `### 1. Heading Title\n\nParagraph description...`
+  clean = clean.replace(/^(\d+)\.\s+\*\*([^*]+)\*\*\s+(.+)$/gm, '### $1. $2\n\n$3');
+  // 2. `**Subheading:** Paragraph description...` -> `### Subheading\n\nParagraph description...` when at line start
+  clean = clean.replace(/^\*\*([^*:]+):\*\*\s+(.+)$/gm, '### $1\n\n$2');
+  // 3. `*Subheading:* Paragraph description...` -> `### Subheading\n\nParagraph description...`
+  clean = clean.replace(/^\*([^*:]+):\*\*\s+(.+)$/gm, '### $1\n\n$2');
+
+  try {
+    return marked.parse(clean, { gfm: true, async: false }) as string;
+  } catch (err) {
+    console.error("Marked parser failed:", err);
+    return clean;
+  }
 }
 
 // ==========================================

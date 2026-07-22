@@ -769,89 +769,138 @@ export default function PreviewView({ article }: PreviewViewProps) {
 
       {/* Embedded WordPress classic editor TinyMCE style sheet values */}
       <style dangerouslySetInnerHTML={{ __html: `
-        .prose-wp h1, .prose-wp h2, .prose-wp h3, .prose-wp h4, .prose-wp h5, .prose-wp h6 {
-          font-family: Georgia, "Times New Roman", serif;
-          font-weight: bold;
-          color: #23282d;
-          line-height: 1.3;
-          margin-top: 1.6em;
-          margin-bottom: 0.8em;
-          letter-spacing: -0.01em;
+        .prose-wp {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+          color: #334155;
+          font-size: 16px;
+          line-height: 1.8;
         }
-        .prose-wp h1 { font-size: 1.8rem; }
-        .prose-wp h2 { font-size: 1.5rem; border-bottom: none; }
-        .prose-wp h3 { font-size: 1.25rem; }
-        .prose-wp h4 { font-size: 1.15rem; }
+
+        .prose-wp h1, .prose-wp h2, .prose-wp h3, .prose-wp h4, .prose-wp h5, .prose-wp h6 {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+          font-weight: 700;
+          color: #0f172a;
+          line-height: 1.35;
+          letter-spacing: -0.015em;
+        }
+
+        .prose-wp h1 { 
+          font-size: 1.875rem; 
+          margin-top: 1.8em; 
+          margin-bottom: 0.8em; 
+        }
+
+        .prose-wp h2 { 
+          font-size: 1.45rem; 
+          margin-top: 1.8em; 
+          margin-bottom: 0.75em; 
+          border-bottom: 1px solid #e2e8f0; 
+          padding-bottom: 0.4em; 
+        }
+
+        .prose-wp h3 { 
+          font-size: 1.2rem; 
+          margin-top: 1.5em; 
+          margin-bottom: 0.6em; 
+          color: #1e293b;
+        }
+
+        .prose-wp h4 { 
+          font-size: 1.05rem; 
+          margin-top: 1.3em; 
+          margin-bottom: 0.5em; 
+        }
         
         .prose-wp p {
-          font-family: Georgia, "Times New Roman", serif;
-          font-size: 15px;
-          color: #333333;
-          line-height: 1.7;
-          margin-bottom: 1.5em;
+          font-size: 16px;
+          color: #334155;
+          line-height: 1.8;
+          margin-bottom: 1.4em;
           text-align: left;
+        }
+
+        .prose-wp strong, .prose-wp b {
+          font-weight: 700;
+          color: #0f172a;
+        }
+
+        .prose-wp em, .prose-wp i {
+          font-style: italic;
+          color: #475569;
         }
         
         .prose-wp ul {
           list-style-type: disc !important;
-          margin-bottom: 1.5em;
-          padding-left: 24px;
-          color: #333333;
+          margin-bottom: 1.4em;
+          padding-left: 1.5rem;
+          color: #334155;
         }
         
         .prose-wp ol {
           list-style-type: decimal !important;
-          margin-bottom: 1.5em;
-          padding-left: 24px;
-          color: #333333;
+          margin-bottom: 1.4em;
+          padding-left: 1.5rem;
+          color: #334155;
         }
         
         .prose-wp li {
-          font-family: Georgia, "Times New Roman", serif;
-          font-size: 15px;
-          margin-bottom: 0.5em;
+          font-size: 16px;
+          color: #334155;
+          margin-bottom: 0.45em;
           line-height: 1.7;
+        }
+
+        .prose-wp li strong, .prose-wp li b {
+          color: #0f172a;
         }
         
         .prose-wp blockquote {
-          border-left: 4px solid #ccd0d4;
-          padding: 0.2em 0 0.2em 15px;
-          margin: 1.5em 10px;
+          border-left: 4px solid #2563eb;
+          background-color: #f8fafc;
+          padding: 12px 18px;
+          margin: 1.5em 0;
+          border-radius: 0 8px 8px 0;
           font-style: italic;
-          color: #555d66;
+          color: #334155;
+          font-size: 15px;
         }
 
         .prose-wp a {
-          color: #0073aa;
+          color: #2563eb;
+          font-weight: 600;
           text-decoration: underline;
+          text-underline-offset: 2px;
         }
         
         .prose-wp a:hover {
-          color: #00a0d2;
+          color: #1d4ed8;
         }
 
         .prose-wp table {
           width: 100%;
           border-collapse: collapse;
           margin-bottom: 1.5em;
-          font-family: Georgia, "Times New Roman", serif;
           font-size: 14px;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          overflow: hidden;
         }
 
         .prose-wp th, .prose-wp td {
-          border: 1px solid #ccd0d4;
-          padding: 8px 10px;
+          border: 1px solid #e2e8f0;
+          padding: 10px 14px;
           text-align: left;
         }
 
         .prose-wp th {
-          background-color: #f1f1f1;
-          font-weight: bold;
+          background-color: #f1f5f9;
+          color: #0f172a;
+          font-weight: 700;
         }
 
         .prose-wp hr {
           border: 0;
-          border-top: 1px solid #ccd0d4;
+          border-top: 1px solid #e2e8f0;
           margin: 2em 0;
         }
       `}} />

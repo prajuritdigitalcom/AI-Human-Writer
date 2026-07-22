@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { marked } from "marked";
 import { StyleType, AuditReport, GeneratedArticle, OverusedWordCheck, FAQItem, ImageMetadata } from "../src/types.js";
 import { getStoredKnowledge } from "./wikipediaKnowledge.js";
 import { getStoredEditorialKnowledge } from "./georgeKaoKnowledge.js";
@@ -281,9 +282,18 @@ ${generalRecsList}
    - Vary your sentence length! Write some short punchy sentences (3-7 words), some medium sentences (10-15 words), and only occasionally long sentences.
    - Varied paragraph sizes (some paragraphs should be 1-2 sentences, some 3 sentences. Never make them all identical blocks).
    - Do NOT start consecutive paragraphs or sentences with the same structural syntax (e.g., "Sauna kayu adalah...", "Sauna kayu dapat...").
-6. INTRODUCTION HOOKS:
+
+6. MANDATORY MARKDOWN & SEMANTIC HTML LAYOUT RULES (VERY IMPORTANT):
+   - Every main section MUST use a proper Markdown Heading level 2 ("## Judul Bagian Utama").
+   - Every sub-point or sub-topic MUST use a proper Markdown Heading level 3 ("### Judul Sub-bagian").
+   - NEVER embed subheadings as inline bold text at the beginning of a paragraph or list item (e.g. DO NOT write '1. **Judul Poin** teks penjelasan...'). ALWAYS put subheadings on their own separate line as '### Judul Sub-bagian' followed by a clean, separate paragraph on the next line!
+   - Separate ALL subheadings, paragraphs, blockquotes, and lists with empty lines.
+   - DO NOT italicize whole sentences or paragraphs. Use italics (*kata*) strictly for individual foreign/technical terms only.
+
+7. INTRODUCTION HOOKS:
    - Do NOT start with high-level cliché fluff. Start immediately with a concrete, compelling human hook, fact, anecdote, or specific problem statement.
-7. FACTS & CITATIONS:
+
+8. FACTS & CITATIONS:
    - Do not make up fake experts or statistics. Relate strictly to the provided reference info.
 `;
 
@@ -297,7 +307,7 @@ ${referenceInfo || 'Tulis artikel mendalam berdasarkan pengetahuan profesional.'
 ${linksDescription}
 
 OUTPUT REQUIREMENT:
-You must return your output strictly in JSON format. The article text inside "contentMarkdown" must be written in rich Markdown with elegant section headings (H2, H3), lists, bolding, and correct internal links integrated.
+You must return your output strictly in JSON format. The article text inside "contentMarkdown" must be written in rich Markdown with elegant section headings (## H2, ### H3), separate paragraphs, bullet lists, bolding, and correct internal links integrated.
 
 Strict JSON format to generate:
 {
@@ -309,7 +319,7 @@ Strict JSON format to generate:
   "featuredImageTitle": "Title for the image",
   "featuredImageAltText": "Keyword-optimized Alt Text for the image",
   "featuredImageCaption": "Natural descriptive caption for the image including the keyword",
-  "contentMarkdown": "The complete natural Indonesian article in Markdown (approx. 800 - 1500 words). Ensure there are no introductory/concluding cliché words, and sentences have varied lengths.",
+  "contentMarkdown": "The complete natural Indonesian article in Markdown (approx. 800 - 1500 words). Use ## H2 and ### H3 for all subheadings, with separate paragraphs under each subheading. Ensure no introductory/concluding cliché words, and sentences have varied lengths.",
   "faq": [
     { "question": "Relevant FAQ Question 1", "answer": "Practical Answer 1" },
     { "question": "Relevant FAQ Question 2", "answer": "Practical Answer 2" },
@@ -781,101 +791,27 @@ REQUIRED OUTPUT FORMAT (JSON ONLY):
   };
 }
 
-// Simple fast markdown parser to generate beautiful semantic HTML on server
+// Robust Markdown parser using marked library for clean semantic HTML
 function convertMarkdownToHtml(markdown: string): string {
   if (!markdown) return '';
   
-  // 1. Strip carriage returns and trim whitespace
   let clean = markdown.replace(/\r/g, '').trim();
-  
-  // 2. Strip surrounding markdown code fence blocks if any
-  clean = clean.replace(/^```[a-zA-Z]*\n/gi, '');
-  clean = clean.replace(/\n```$/g, '');
-  clean = clean.trim();
+  clean = clean.replace(/^```[a-zA-Z]*\n/gi, '').replace(/\n```$/g, '').trim();
 
-  // 3. Convert inline styles first (bold, italic, links, code)
-  // Bold: **text** or __text__
-  clean = clean.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-gray-900">$1</strong>');
-  clean = clean.replace(/__([^_]+)__/g, '<strong class="font-bold text-gray-900">$1</strong>');
-  
-  // Italic: *text* or _text_
-  clean = clean.replace(/\*([^*]+)\*/g, '<em class="italic text-gray-800">$1</em>');
-  clean = clean.replace(/_([^_]+)_/g, '<em class="italic text-gray-800">$1</em>');
+  // Fix common AI inline-heading patterns:
+  // 1. `1. **Heading Title** Paragraph description...` -> `### 1. Heading Title\n\nParagraph description...`
+  clean = clean.replace(/^(\d+)\.\s+\*\*([^*]+)\*\*\s+(.+)$/gm, '### $1. $2\n\n$3');
+  // 2. `**Subheading:** Paragraph description...` -> `### Subheading\n\nParagraph description...` when at line start
+  clean = clean.replace(/^\*\*([^*:]+):\*\*\s+(.+)$/gm, '### $1\n\n$2');
+  // 3. `*Subheading:* Paragraph description...` -> `### Subheading\n\nParagraph description...`
+  clean = clean.replace(/^\*([^*:]+):\*\*\s+(.+)$/gm, '### $1\n\n$2');
 
-  // Inline code: `code`
-  clean = clean.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-gray-100 font-mono text-xs text-red-600">$1</code>');
-
-  // Links: [text](url)
-  // Use a professional, high-contrast text color for links
-  clean = clean.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-blue-600 hover:underline font-medium transition-colors duration-150">$1</a>');
-
-  // 4. Split into paragraph blocks by double-newlines
-  const blocks = clean.split(/\n\s*\n+/);
-  
-  const htmlBlocks = blocks.map(block => {
-    const trimmed = block.trim();
-    if (!trimmed) return '';
-
-    // Check if it's a heading
-    if (trimmed.startsWith('#')) {
-      const match = trimmed.match(/^(#{1,6})\s+(.*)$/s);
-      if (match) {
-        const level = match[1].length;
-        const text = match[2].trim();
-        // Return standard responsive HTML headings with beautiful spacing
-        if (level === 1) {
-          return `<h1 class="text-2xl font-extrabold text-gray-900 mt-6 mb-3 font-display">${text}</h1>`;
-        } else if (level === 2) {
-          return `<h2 class="text-xl font-bold text-gray-800 mt-5 mb-2.5 font-display border-b border-gray-100 pb-1">${text}</h2>`;
-        } else {
-          return `<h3 class="text-lg font-semibold text-gray-800 mt-4 mb-2 font-display">${text}</h3>`;
-        }
-      }
-    }
-
-    // Check if it's a bulleted list block
-    if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('• ')) {
-      const items = trimmed.split(/\n\s*[-*•]\s+/);
-      // Clean up the first item which still has its bullet prefix
-      if (items[0]) {
-        items[0] = items[0].replace(/^[-*•]\s+/, '');
-      }
-      const liElements = items
-        .map(item => item.trim())
-        .filter(item => item.length > 0)
-        .map(item => `<li class="list-disc ml-5 mb-1.5 text-gray-700">${item}</li>`)
-        .join('\n');
-      return `<ul class="my-4 space-y-1.5">${liElements}</ul>`;
-    }
-
-    // Check if it's a numbered list block
-    if (/^\d+\.\s+/.test(trimmed)) {
-      const items = trimmed.split(/\n\s*\d+\.\s+/);
-      if (items[0]) {
-        items[0] = items[0].replace(/^\d+\.\s+/, '');
-      }
-      const liElements = items
-        .map(item => item.trim())
-        .filter(item => item.length > 0)
-        .map(item => `<li class="list-decimal ml-5 mb-1.5 text-gray-700">${item}</li>`)
-        .join('\n');
-      return `<ol class="my-4 space-y-1.5">${liElements}</ol>`;
-    }
-
-    // Check if it's a blockquote
-    if (trimmed.startsWith('>')) {
-      const quoteText = trimmed.replace(/^>\s*/gm, '').trim();
-      return `<blockquote class="border-l-4 border-gray-300 pl-4 py-1 my-4 italic text-gray-600 bg-gray-50 rounded-r">${quoteText}</blockquote>`;
-    }
-
-    // Default: wrap as paragraph
-    // Replace single newlines inside paragraph with a space to make it continuous human paragraph, 
-    // unless they are explicit line breaks
-    const cleanedParagraph = trimmed.replace(/\n+/g, ' ');
-    return `<p class="text-gray-700 leading-relaxed mb-4 text-justify">${cleanedParagraph}</p>`;
-  });
-
-  return htmlBlocks.filter(b => b.length > 0).join('\n\n');
+  try {
+    return marked.parse(clean, { gfm: true, async: false }) as string;
+  } catch (err) {
+    console.error("Marked parser failed:", err);
+    return clean;
+  }
 }
 
 // Client-key rolling utility
