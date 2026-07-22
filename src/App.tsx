@@ -204,16 +204,16 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen bg-gray-50 flex flex-col md:flex-row font-sans text-gray-800 ${!isAuthenticated ? 'overflow-hidden max-h-screen pointer-events-none select-none blur-xs' : ''}`}>
-      
-      {/* PASSWORD LOCK MODAL - SECURE ACCESS POPUP */}
+    <>
+      {/* PASSWORD LOCK MODAL - SECURE POPUP OUTSIDE BLURRED CONTAINER */}
       {!isAuthenticated && (
-        <div className="pointer-events-auto select-auto">
-          <PasswordModal onSuccess={() => setIsAuthenticated(true)} />
-        </div>
+        <PasswordModal onSuccess={() => setIsAuthenticated(true)} />
       )}
-      
-      {/* LEFT SIDEBAR - DESKTOP ONLY */}
+
+      {/* MAIN WEBSITE APP CONTAINER */}
+      <div className={`min-h-screen bg-gray-50 flex flex-col md:flex-row font-sans text-gray-800 transition-all duration-300 ${!isAuthenticated ? 'overflow-hidden h-screen max-h-screen pointer-events-none select-none filter blur-md opacity-40' : ''}`}>
+        
+        {/* LEFT SIDEBAR - DESKTOP ONLY */}
       <aside className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 md:left-0 bg-white shadow-sm z-30 select-none border-r border-gray-100">
         {/* Sidebar Branding Logo & Title */}
         <div className="p-6 flex items-center gap-3">
@@ -452,5 +452,6 @@ export default function App() {
 
       </div>
     </div>
-  );
+  </>
+);
 }
