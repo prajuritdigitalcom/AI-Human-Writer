@@ -87,6 +87,19 @@ export interface GeneratedArticle {
   }[];
   helpfulContentLog?: HelpfulContentLog;
   semanticHtmlLog?: SemanticHtmlLog;
+  aiWritingAuditLog?: AiWritingAuditLog;
+}
+
+export interface AiWritingAuditLog {
+  knowledgeVersion: string;
+  score: number;
+  validationResult: string;
+  revisionCount: number;
+  forbiddenWordsFound: number;
+  sentenceVariance: number;
+  evaluationResult: string;
+  issuesDetected: string[];
+  finalStatus: string;
 }
 
 export interface SemanticHtmlLog {

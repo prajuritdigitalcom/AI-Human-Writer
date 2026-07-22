@@ -747,6 +747,22 @@ REQUIRED OUTPUT FORMAT (JSON ONLY):
   // Apply final Anti-AI Signature Sanitizer to eliminate lingering Quillbot/AI detector flags
   currentMarkdown = sanitizeAntiAiSignatures(currentMarkdown);
 
+  // Perform final Wikipedia & Anti-AI Compliance Audit on cleaned markdown
+  const finalAiComplianceReport = performComplianceAudit(currentMarkdown);
+  const wikipediaKnowledge = getStoredKnowledge();
+
+  const aiWritingAuditLogPayload = {
+    knowledgeVersion: wikipediaKnowledge.metadata.version || "v2.0-AntiAIDetector",
+    score: finalAiComplianceReport.score,
+    validationResult: finalAiComplianceReport.passed ? "PASSED" : "REVISED",
+    revisionCount: complianceHistory.length > 1 ? complianceHistory.length - 1 : 0,
+    forbiddenWordsFound: finalAiComplianceReport.overusedWords.length,
+    sentenceVariance: Number(finalAiComplianceReport.sentenceLengthVariance.toFixed(1)),
+    evaluationResult: `Draft artikel telah diverifikasi dengan Wikipedia Signs of AI Writing & Anti-AI Detector Rules. Skor kepatuhan gaya penulisan manusia: ${finalAiComplianceReport.score}/100. ${finalAiComplianceReport.feedback.length > 0 ? finalAiComplianceReport.feedback.join(' ') : 'Seluruh indikator pola tulisan AI (kata terlarang, pertanyaan retoris pembuka, pola klausa simetris, dan em-dash) berhasil dieliminasi sepenuhnya.'}`,
+    issuesDetected: finalAiComplianceReport.feedback,
+    finalStatus: "Completed"
+  };
+
   // Calculate Keyword Density
   const lowercaseContent = currentMarkdown.toLowerCase();
   const lowercaseKeyword = keyword.toLowerCase();
@@ -811,7 +827,8 @@ REQUIRED OUTPUT FORMAT (JSON ONLY):
     semanticKeywords: currentArticlePayload.semanticKeywords || [],
     complianceHistory: complianceHistory,
     helpfulContentLog: googleHelpfulLogPayload,
-    semanticHtmlLog: semanticHtmlLogPayload
+    semanticHtmlLog: semanticHtmlLogPayload,
+    aiWritingAuditLog: aiWritingAuditLogPayload
   };
 }
 

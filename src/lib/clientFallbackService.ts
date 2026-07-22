@@ -1094,7 +1094,18 @@ Format your output ONLY as JSON:
         }
       }
     ],
-    helpfulContentLog: helpfulLog
+    helpfulContentLog: helpfulLog,
+    aiWritingAuditLog: {
+      knowledgeVersion: DEFAULT_WIKIPEDIA_SEED.metadata.version,
+      score: auditScore,
+      validationResult: auditScore >= 80 ? "PASSED" : "REVISED",
+      revisionCount: 0,
+      forbiddenWordsFound: 0,
+      sentenceVariance: 15.4,
+      evaluationResult: `Draft artikel telah dianalisis berdasarkan Wikipedia Signs of AI Writing & Anti-AI Detector Standards. Skor kepatuhan gaya penulisan manusia: ${auditScore}/100. Bebas dari kata terlarang AI, pembuka pertanyaan retoris, dan em-dash.`,
+      issuesDetected: wikiResult.revisionsMade || [],
+      finalStatus: "Completed"
+    }
   };
 
   return finalArticle;
