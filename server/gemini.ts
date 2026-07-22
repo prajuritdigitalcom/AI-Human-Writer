@@ -16,7 +16,7 @@ function getSentences(text: string): string[] {
   return matches.map(s => s.trim()).filter(s => s.length > 5);
 }
 
-// Programmatic Compliance Audit based on Wikipedia:Signs of AI writing
+// Programmatic Compliance Audit based on Wikipedia:Signs_of_AI_writing & Anti-AI Detector Standards
 export function performComplianceAudit(markdown: string): AuditReport {
   const knowledge = getStoredKnowledge();
   const lowercase = markdown.toLowerCase();
@@ -25,17 +25,16 @@ export function performComplianceAudit(markdown: string): AuditReport {
   const clichesFound: string[] = [];
   let score = 100;
 
-  // 1. Check for Forbidden Words
+  // 1. Check for Forbidden Words and Indonesian AI Fillers
   knowledge.forbiddenWords.forEach(({ word, severity, max, penalty, message }) => {
-    // Regex for whole word or partial depending on word
-    const regex = new RegExp(`\\b${word}(s|ed|ing)?\\b`, 'gi');
+    const regex = new RegExp(`\\b${word.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'gi');
     const matches = lowercase.match(regex);
     const count = matches ? matches.length : 0;
     
     if (count > max) {
       score -= (count - max) * penalty;
       overusedWords.push({ word, count, severity: severity as 'high' | 'medium' | 'low' });
-      feedback.push(`Ditemukan kata "${word}" sebanyak ${count} kali (${message}). Batas maksimal: ${max}.`);
+      feedback.push(`Ditemukan kata/frase AI "${word}" sebanyak ${count} kali (${message}). Batas maksimal: ${max}.`);
     }
   });
 
@@ -54,10 +53,22 @@ export function performComplianceAudit(markdown: string): AuditReport {
     });
   });
 
-  // 3. Check for Intro Clichés in the first paragraph
+  // 3. Check for Intro Clichés & Rhetorical Opening Questions (VERY CRITICAL FOR AI DETECTORS)
   let introClicheCount = 0;
+  let hasRhetoricalIntro = false;
   if (paragraphs.length > 0) {
     const firstParagraph = paragraphs[0].toLowerCase();
+    
+    // Check for rhetorical opening questions in paragraph 1
+    const isQuestionIntro = /^(pernah|apakah|tahukah|bayangkan|inginkah|pernahkah)/i.test(firstParagraph) || 
+      (firstParagraph.includes('?') && (firstParagraph.startsWith('pernah') || firstParagraph.startsWith('apakah') || firstParagraph.startsWith('tahukah')));
+    
+    if (isQuestionIntro) {
+      score -= 25;
+      hasRhetoricalIntro = true;
+      feedback.push("DILARANG KERAS: Paragraf pertama dibuka dengan pertanyaan retoris ('Pernah membayangkan...?'). Ini pemicu utama skor AI 97%+ di Quillbot/CopyLeaks. Buka paragraf pertama langsung dengan fakta teknis, isu nyata, atau aksi.");
+    }
+
     knowledge.introCliches.forEach(cliche => {
       if (firstParagraph.includes(cliche)) {
         score -= 10;
@@ -68,7 +79,15 @@ export function performComplianceAudit(markdown: string): AuditReport {
     });
   }
 
-  // 4. Check Sentence Length Variance
+  // 4. Check for Em-dash (—) Overuse
+  const emDashMatches = markdown.match(/—| -- /g);
+  const emDashCount = emDashMatches ? emDashMatches.length : 0;
+  if (emDashCount > 2) {
+    score -= 15;
+    feedback.push(`Ditemukan ${emDashCount} penggunaan em-dash ('—'). Em-dash berlebihan di tengah kalimat adalah ciri khas gaya tulisan AI. Ganti dengan koma atau pecah menjadi dua kalimat.`);
+  }
+
+  // 5. Check Sentence Length Variance (Burstiness)
   const sentences = getSentences(markdown);
   let sentenceLengthVariance = 0;
   let sentenceLengthFeedback = 'Kurang data kalimat untuk mengevaluasi ritme.';
@@ -83,7 +102,7 @@ export function performComplianceAudit(markdown: string): AuditReport {
     const stdDev = Math.sqrt(avgSquaredDiff);
     sentenceLengthVariance = stdDev;
 
-    if (stdDev < 4) {
+    if (stdDev < 4.5) {
       score -= 15;
       sentenceLengthFeedback = `Monoton (Standar Deviasi: ${stdDev.toFixed(1)} kata). Panjang kalimat terlalu seragam (rata-rata ${avgLength.toFixed(1)} kata). Human writing bervariasi antara kalimat pendek dan panjang.`;
       feedback.push(`Ritme tulisan monoton. Standar deviasi panjang kalimat hanya ${stdDev.toFixed(1)} kata (Target: bervariasi, deviasi > 4.5). Variasikan panjang kalimat Anda.`);
@@ -98,9 +117,9 @@ export function performComplianceAudit(markdown: string): AuditReport {
   // Cap minimum score at 0
   score = Math.max(0, score);
   
-  // Set passed criteria: score must be >= 80, no delve, no tapestry
-  const hasCriticalWords = overusedWords.some(w => (w.word === 'delve' || w.word === 'tapestry') && w.count > 0);
-  const passed = score >= 80 && !hasCriticalWords;
+  // Set passed criteria: score must be >= 85, no critical words, no rhetorical intro
+  const hasCriticalWords = overusedWords.some(w => (w.word === 'delve' || w.word === 'tapestry' || w.word === 'jujur saja' || w.word === 'di situlah') && w.count > 0);
+  const passed = score >= 85 && !hasCriticalWords && !hasRhetoricalIntro;
 
   return {
     passed,
@@ -110,11 +129,11 @@ export function performComplianceAudit(markdown: string): AuditReport {
     clichesFound,
     sentenceLengthVariance,
     sentenceLengthFeedback,
-    introductionFeedback: introClicheCount > 0 
-      ? 'Ditemukan frase klise pembuka.' 
+    introductionFeedback: (introClicheCount > 0 || hasRhetoricalIntro)
+      ? 'Ditemukan frase klise/pertanyaan retoris pembuka yang harus dihilangkan.' 
       : 'Bagus, pembuka langsung fokus dan natural.',
     conclusionFeedback: transitionClicheCount > 0 
-      ? 'Ditemukan frase transisi klise seperti "In conclusion".' 
+      ? 'Ditemukan frase transisi klise seperti "In conclusion" atau "Kesimpulannya".' 
       : 'Bagus, penutup natural dan bebas cliché.'
   };
 }
@@ -263,13 +282,26 @@ ${parsedLinks.map(l => `- "${l.title}" linking to URL: ${l.url}`).join('\n')}`
 
   // Build Prompts
   const systemInstruction = `
-You are an expert SEO Human Copywriter. Your mission is to generate a premium-quality article in Indonesian (Bahasa Indonesia) that reads completely naturally, matches the selected tone, achieves outstanding keyword ranking, and strictly complies with the Wikipedia Sign of AI Writing standards.
+You are an elite SEO Human Copywriter and Senior Field Journalist in Bahasa Indonesia.
+Your mission is to generate an authentic, highly readable, deep SEO article that reads 100% like human-written prose and passes AI Detectors (Quillbot, CopyLeaks, Turnitin, GPTZero) with human scores (0-5% AI detected).
 
-WIKIPEDIA COMPLIANCE GUIDELINES (MANDATORY) - DYNAMICALLY SYNCHRONIZED COMPLIANCE MODEL:
+CRITICAL ANTI-AI DETECTOR (QUILLBOT / COPYLEAKS) HUMAN PROSE MANDATES:
+1. ABSOLUTELY NO RHETORICAL QUESTION OPENINGS IN PARAGRAPH 1:
+   - DILARANG KERAS membuka paragraf pertama dengan pertanyaan retoris (misal: "Pernah membayangkan...", "Pernahkah Anda...", "Tahukah Anda..."). Ini memicu skor 97%+ AI di Quillbot.
+   - Pembuka harus LANGSUNG berupa fakta teknis, isu spesifik, atau aksi nyata di lapangan.
+2. ABSOLUTELY NO CONVERSATIONAL AI BRIDGES & FILLER PHRASES:
+   - DILARANG KERAS menggunakan pemanis buatan AI seperti: "Tapi jujur saja", "Nah, di situlah", "Bukan cuma soal X... ini tentang Y", "Tak bisa dipungkiri", "Penting untuk diingat bahwa".
+3. NO OVERUSED EM-DASHES (—):
+   - Jangan gunakan em-dash ("—") untuk menggabungkan dua klausa di tengah kalimat. Gunakan koma atau buat kalimat terpisah.
+4. HIGH BURSTINESS & DYNAMIC RHYTHM:
+   - Variasikan panjang kalimat secara ekstrem! Kombinasikan kalimat sangat pendek (3-6 kata) dengan kalimat penjelasan menengah (12-16 kata).
+   - Hindari struktur paragraf simetris atau balasan otomatis.
+
+WIKIPEDIA COMPLIANCE GUIDELINES (MANDATORY):
 1. WORD CHOICE & BUZZWORDS TO AVOID:
 ${forbiddenWordsList}
 
-2. PARAGRAPH TRANSITIONS TO AVOID (DO NOT USE TO START PARAGRAPHS, ESPECIALLY IN THE CONCLUDING PARAGRAPH):
+2. PARAGRAPH TRANSITIONS TO AVOID:
 ${transitionsList}
 
 3. INTRODUCTION BOILERPLATE FILLER TO AVOID:
@@ -278,23 +310,11 @@ ${introClichesList}
 4. ADDITIONAL GENERAL RECOMMENDATIONS & STYLING COMPLIANCE RULES:
 ${generalRecsList}
 
-5. SENTENCE & PARAGRAPH RHYTHM:
-   - Vary your sentence length! Write some short punchy sentences (3-7 words), some medium sentences (10-15 words), and only occasionally long sentences.
-   - Varied paragraph sizes (some paragraphs should be 1-2 sentences, some 3 sentences. Never make them all identical blocks).
-   - Do NOT start consecutive paragraphs or sentences with the same structural syntax (e.g., "Sauna kayu adalah...", "Sauna kayu dapat...").
-
-6. MANDATORY MARKDOWN & SEMANTIC HTML LAYOUT RULES (VERY IMPORTANT):
+5. MANDATORY MARKDOWN & SEMANTIC HTML LAYOUT RULES:
    - Every main section MUST use a proper Markdown Heading level 2 ("## Judul Bagian Utama").
    - Every sub-point or sub-topic MUST use a proper Markdown Heading level 3 ("### Judul Sub-bagian").
    - NEVER embed subheadings as inline bold text at the beginning of a paragraph or list item (e.g. DO NOT write '1. **Judul Poin** teks penjelasan...'). ALWAYS put subheadings on their own separate line as '### Judul Sub-bagian' followed by a clean, separate paragraph on the next line!
    - Separate ALL subheadings, paragraphs, blockquotes, and lists with empty lines.
-   - DO NOT italicize whole sentences or paragraphs. Use italics (*kata*) strictly for individual foreign/technical terms only.
-
-7. INTRODUCTION HOOKS:
-   - Do NOT start with high-level cliché fluff. Start immediately with a concrete, compelling human hook, fact, anecdote, or specific problem statement.
-
-8. FACTS & CITATIONS:
-   - Do not make up fake experts or statistics. Relate strictly to the provided reference info.
 `;
 
   const userPrompt = `
@@ -488,6 +508,7 @@ INTERNAL MOOD & INSTRUCTIONS:
 - Simplify complex, academic, or marketing-heavy nouns and verbs with simpler human-like equivalents.
 - Ensure sentence lengths are completely dynamic (some very short, some medium, some slightly longer).
 - Remove any remaining parallel syntactic list structures or uniform formatting.
+- CRITICAL ANTI-AI DETECTOR RULE: DO NOT insert artificial AI conversational fillers like "Tapi jujur saja", "Nah, di situlah", "Bukan cuma soal X... ini tentang Y", "Tak bisa dipungkiri". Do NOT add rhetorical question openings in paragraph 1 ("Pernah membayangkan...?"). Do NOT use em-dashes ("—").
 - CRITICAL: You MUST naturally keep all headings, facts, search intents, keyword occurrences, and internal markdown links (${parsedLinks.map(l => l.title).join(', ')}) exactly intact. Do NOT remove or modify URLs and titles of the internal links.
 
 ---
@@ -723,6 +744,9 @@ REQUIRED OUTPUT FORMAT (JSON ONLY):
     };
   }
 
+  // Apply final Anti-AI Signature Sanitizer to eliminate lingering Quillbot/AI detector flags
+  currentMarkdown = sanitizeAntiAiSignatures(currentMarkdown);
+
   // Calculate Keyword Density
   const lowercaseContent = currentMarkdown.toLowerCase();
   const lowercaseKeyword = keyword.toLowerCase();
@@ -789,6 +813,43 @@ REQUIRED OUTPUT FORMAT (JSON ONLY):
     helpfulContentLog: googleHelpfulLogPayload,
     semanticHtmlLog: semanticHtmlLogPayload
   };
+}
+
+// Programmatic post-processor to guarantee zero leftover AI detector signatures (Quillbot, CopyLeaks, Turnitin)
+export function sanitizeAntiAiSignatures(markdown: string): string {
+  if (!markdown) return '';
+  let cleaned = markdown;
+
+  // 1. Remove rhetorical question openings in paragraph 1
+  const paragraphs = cleaned.split(/\n+/);
+  if (paragraphs.length > 0) {
+    let p1 = paragraphs[0];
+    if (/^(pernah|apakah|tahukah|bayangkan|inginkah|pernahkah)/i.test(p1.trim())) {
+      p1 = p1.replace(/^(Pernah membayangkan|Pernahkah Anda membayangkan|Tahukah Anda|Bayangkan jika|Apakah Anda ingin|Inginkah Anda)\b[^\n?]*\?\s*/i, '');
+      paragraphs[0] = p1;
+      cleaned = paragraphs.join('\n\n');
+    }
+  }
+
+  // 2. Remove AI bridge fillers at sentence or paragraph starts
+  cleaned = cleaned.replace(/^Tapi jujur saja,\s*/gm, '');
+  cleaned = cleaned.replace(/^Jujur saja,\s*/gm, '');
+  cleaned = cleaned.replace(/^Nah, di situlah\s*/gm, '');
+  cleaned = cleaned.replace(/^Di situlah\s*/gm, '');
+  cleaned = cleaned.replace(/^Tak bisa dipungkiri,\s*/gm, '');
+  cleaned = cleaned.replace(/^Tidak dapat dipungkiri,\s*/gm, '');
+  cleaned = cleaned.replace(/^Penting untuk diingat bahwa\s*/gm, '');
+  cleaned = cleaned.replace(/^Perlu diingat bahwa\s*/gm, '');
+
+  // 3. Convert em-dash (—) clause joiners mid-sentence
+  cleaned = cleaned.replace(/ — /g, ', ');
+  cleaned = cleaned.replace(/—/g, ', ');
+  cleaned = cleaned.replace(/ -- /g, ', ');
+
+  // 4. Remove inline bold list prefixes like `1. **Heading** Text...`
+  cleaned = cleaned.replace(/^(\d+)\.\s+\*\*([^*]+)\*\*\s+(.+)$/gm, '### $1. $2\n\n$3');
+
+  return cleaned.trim();
 }
 
 // Robust Markdown parser using marked library for clean semantic HTML

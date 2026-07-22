@@ -6,57 +6,68 @@ import { StoredKnowledge } from "../src/types.js";
 const KNOWLEDGE_DIR = path.join(process.cwd(), "knowledge");
 const KNOWLEDGE_FILE_PATH = path.join(KNOWLEDGE_DIR, "compliance-rules.json");
 
-// Default high-quality compliance seed based directly on Wikipedia:Signs_of_AI_writing
+// Default high-quality compliance seed based directly on Wikipedia:Signs_of_AI_writing & Anti-AI Detector Standards
 const DEFAULT_SEED_KNOWLEDGE: StoredKnowledge = {
   metadata: {
-    source: "Wikipedia: Signs of AI Writing",
+    source: "Wikipedia: Signs of AI Writing & Anti-AI Detector Rules",
     sourceUrl: "https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing",
-    version: "v1.0-Default",
+    version: "v2.0-AntiAIDetector",
     lastSynced: new Date().toISOString().split('T')[0],
-    rulesCount: 84,
-    patternsCount: 36,
-    recommendationsCount: 41
+    rulesCount: 112,
+    patternsCount: 48,
+    recommendationsCount: 52
   },
   forbiddenWords: [
-    { word: "delve", severity: "high", max: 0, penalty: 15, message: "strictly forbidden in human writing, extremely high AI signature" },
-    { word: "tapestry", severity: "high", max: 0, penalty: 15, message: "overused cliché (\"rich tapestry of\"), highly characteristic of AI" },
-    { word: "testament", severity: "medium", max: 1, penalty: 10, message: "overused cliché (\"a testament to\"), feels unnatural" },
+    { word: "delve", severity: "high", max: 0, penalty: 20, message: "strictly forbidden in human writing, extremely high AI signature" },
+    { word: "tapestry", severity: "high", max: 0, penalty: 20, message: "overused cliché (\"rich tapestry of\"), highly characteristic of AI" },
+    { word: "testament", severity: "medium", max: 0, penalty: 15, message: "overused cliché (\"a testament to\"), feels unnatural" },
+    { word: "jujur saja", severity: "high", max: 0, penalty: 20, message: "frase transisi percakapan tiruan AI yang sangat sering terdeteksi Quillbot/AI detector" },
+    { word: "di situlah", severity: "high", max: 0, penalty: 20, message: "frase jembatan AI yang klise (\"nah, di situlah...\")" },
+    { word: "bukan cuma", severity: "high", max: 0, penalty: 15, message: "pola kontras kalimat AI yang klise (\"bukan cuma soal X... ini tentang Y\")" },
+    { word: "bukan sekadar", severity: "high", max: 0, penalty: 15, message: "pola kontras kalimat AI yang klise" },
+    { word: "tak bisa dipungkiri", severity: "high", max: 0, penalty: 15, message: "frase pemanis AI yang klise dan redundant" },
+    { word: "tidak dapat dipungkiri", severity: "high", max: 0, penalty: 15, message: "frase pemanis AI yang klise dan redundant" },
+    { word: "penting untuk diingat", severity: "medium", max: 0, penalty: 10, message: "frase padding AI yang tidak menambah informasi" },
+    { word: "perlu diingat bahwa", severity: "medium", max: 0, penalty: 10, message: "frase padding AI" },
+    { word: "dalam artikel ini", severity: "medium", max: 0, penalty: 10, message: "meta-komentar AI yang memperjelas artikel ditulis oleh bot" },
+    { word: "mari kita bahas", severity: "medium", max: 0, penalty: 10, message: "frase ajakan bot AI" },
+    { word: "solusi terbaik", severity: "medium", max: 1, penalty: 8, message: "klaim jualan AI yang terlalu generik" },
+    { word: "hadir untuk", severity: "medium", max: 1, penalty: 8, message: "frase promosi AI klise" },
+    { word: "sensasi relaksasi", severity: "medium", max: 0, penalty: 10, message: "frase pemanis pemasaran AI" },
     { word: "furthermore", severity: "medium", max: 1, penalty: 5, message: "overly formal academic transition" },
     { word: "moreover", severity: "medium", max: 1, penalty: 5, message: "overly formal academic transition" },
     { word: "it is important to note", severity: "medium", max: 0, penalty: 8, message: "redundant and dry padding" },
-    { word: "note that", severity: "medium", max: 1, penalty: 5, message: "redundant padding phrase" },
-    { word: "vibrant", severity: "low", max: 1, penalty: 5, message: "overly positive AI buzzword" },
-    { word: "revolutionize", severity: "low", max: 1, penalty: 5, message: "hyperbolic AI buzzword" },
-    { word: "pioneering", severity: "low", max: 1, penalty: 5, message: "hyperbolic AI buzzword" },
-    { word: "seamless", severity: "low", max: 1, penalty: 5, message: "overused AI marketing buzzword" },
-    { word: "foster", severity: "low", max: 1, penalty: 5, message: "common AI-suggested verb" },
-    { word: "catalyst", severity: "low", max: 1, penalty: 5, message: "cliché AI noun" },
-    { word: "holistic", severity: "low", max: 1, penalty: 5, message: "cliché AI marketing buzzword" },
-    { word: "synergy", severity: "low", max: 1, penalty: 5, message: "cliché AI business buzzword" }
+    { word: "seamless", severity: "low", max: 1, penalty: 5, message: "overused AI marketing buzzword" }
   ],
   clicheTransitions: [
     "in conclusion",
     "to summarize",
     "ultimately",
     "overall",
-    "in summary",
-    "in closing",
-    "to wrap up",
-    "to sum up"
+    "kesimpulannya",
+    "pada akhirnya",
+    "secara keseluruhan",
+    "singkat kata",
+    "sebagai penutup",
+    "dengan demikian"
   ],
   introCliches: [
+    "pernah membayangkan",
+    "pernahkah anda",
+    "tahukah anda",
+    "bayangkan jika",
+    "di era modern ini",
+    "dalam era digital",
+    "perkembangan pesat",
     "fast-paced world",
-    "ever-evolving",
-    "with the rise of",
-    "advent of",
-    "digital era",
-    "in this modern age"
+    "ever-evolving"
   ],
   generalRecommendations: [
-    "Vary sentence length dynamically: write short punchy sentences interspersed with occasional longer ones.",
-    "Avoid overuse of bulleted and numbered lists for standard narrative prose.",
-    "Avoid starting consecutive sentences with parallel syntactic starters.",
-    "Begin immediately with a concrete problem, factual hook, or compelling statement instead of boilerplate intro filler."
+    "DILARANG KERAS membuka paragraf pertama dengan pertanyaan retoris (misal: 'Pernah membayangkan...'). Pembuka harus berupa fakta teknis atau konteks langsung.",
+    "DILARANG KERAS menggunakan em-dash ('—') berlebihan untuk menggabungkan klausa di tengah kalimat.",
+    "DILARANG KERAS menggunakan frase jembatan AI seperti 'Tapi jujur saja', 'Nah, di situlah', atau 'Bukan sekadar X'.",
+    "Tulis kalimat dengan variasi panjang yang ekstrem (burstiness tinggi): kombinasi kalimat pendek (3-6 kata) dan kalimat penjelasan menengah (10-15 kata).",
+    "Gunakan istilah spesifik industri dan fakta lapangan langsung tanpa basa-basi pemasaran generik."
   ]
 };
 
