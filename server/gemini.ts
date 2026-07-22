@@ -355,7 +355,7 @@ Instruksi Tambahan:
 
     const { result, usedKeyIndex } = await callGeminiWithRollingKeys(keys, async (ai) => {
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.5-flash",
         contents: currentPrompt,
         config: {
           systemInstruction: systemInstruction,
@@ -490,7 +490,7 @@ Return your response as a JSON object matching this schema:
   try {
     const { result: editorialResult } = await callGeminiWithRollingKeys(keys, async (ai) => {
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.5-flash",
         contents: editorialPrompt,
         config: {
           responseMimeType: "application/json",
@@ -609,7 +609,7 @@ REQUIRED OUTPUT FORMAT (JSON ONLY):
 
     const { result: googleHelpfulResult } = await callGeminiWithRollingKeys(keys, async (ai) => {
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.5-flash",
         contents: googleHelpfulPrompt,
         config: {
           responseMimeType: "application/json",
