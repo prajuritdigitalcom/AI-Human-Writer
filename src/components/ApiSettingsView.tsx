@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Key, Plus, Trash2, Eye, EyeOff, CheckCircle, HelpCircle, AlertCircle, Database, RefreshCw, Loader2 } from 'lucide-react';
-import { StoredKnowledge, StoredEditorialKnowledge, StoredGoogleHelpfulKnowledge } from '../types';
+import { StoredKnowledge, StoredEditorialKnowledge, StoredGoogleHelpfulKnowledge, StoredSemanticHtmlKnowledge } from '../types';
 import { 
   getClientWikipediaKnowledge, 
   getClientEditorialKnowledge, 
   getClientGoogleHelpfulKnowledge,
+  getClientSemanticHtmlKnowledge,
   refreshWikipediaClientSide,
   refreshGeorgeKaoClientSide,
-  refreshGoogleHelpfulClientSide
+  refreshGoogleHelpfulClientSide,
+  refreshSemanticHtmlClientSide
 } from '../lib/clientFallbackService';
 
 interface ApiSettingsViewProps {
@@ -39,6 +41,12 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
   const [googleHelpfulSyncStatus, setGoogleHelpfulSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [googleHelpfulSyncError, setGoogleHelpfulSyncError] = useState('');
 
+  // Semantic HTML Knowledge states
+  const [semanticHtmlKnowledge, setSemanticHtmlKnowledge] = useState<StoredSemanticHtmlKnowledge | null>(null);
+  const [loadingSemanticHtml, setLoadingSemanticHtml] = useState(false);
+  const [semanticHtmlSyncStatus, setSemanticHtmlSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+  const [semanticHtmlSyncError, setSemanticHtmlSyncError] = useState('');
+
   // Server diagnostics states
   const [diagnostics, setDiagnostics] = useState<any>(null);
   const [loadingDiagnostics, setLoadingDiagnostics] = useState(false);
@@ -47,6 +55,7 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
     fetchKnowledgeStatus();
     fetchEditorialStatus();
     fetchGoogleHelpfulStatus();
+    fetchSemanticHtmlStatus();
     fetchDiagnostics();
   }, []);
 
@@ -114,6 +123,24 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
       setGoogleHelpfulKnowledge(getClientGoogleHelpfulKnowledge());
     } finally {
       setLoadingGoogleHelpful(false);
+    }
+  };
+
+  const fetchSemanticHtmlStatus = async () => {
+    setLoadingSemanticHtml(true);
+    try {
+      const res = await fetch('/api/semantic-html-status');
+      const data = await res.json();
+      if (data.success && data.knowledge) {
+        setSemanticHtmlKnowledge(data.knowledge);
+      } else {
+        setSemanticHtmlKnowledge(getClientSemanticHtmlKnowledge());
+      }
+    } catch (err) {
+      console.warn('Error fetching Semantic HTML status, loading from local storage:', err);
+      setSemanticHtmlKnowledge(getClientSemanticHtmlKnowledge());
+    } finally {
+      setLoadingSemanticHtml(false);
     }
   };
 
@@ -206,6 +233,37 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
       } catch (localErr: any) {
         setGoogleHelpfulSyncStatus('error');
         setGoogleHelpfulSyncError(localErr.message || 'Gagal menyelaraskan aturan Google Helpful secara lokal.');
+      }
+    }
+  };
+
+  const handleRefreshSemanticHtml = async () => {
+    setSemanticHtmlSyncStatus('syncing');
+    setSemanticHtmlSyncError('');
+    try {
+      const res = await fetch('/api/refresh-semantic-html', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visitorKeys })
+      });
+      const data = await res.json();
+      if (data.success && data.knowledge) {
+        setSemanticHtmlKnowledge(data.knowledge);
+        setSemanticHtmlSyncStatus('success');
+        setTimeout(() => setSemanticHtmlSyncStatus('idle'), 3000);
+      } else {
+        throw new Error(data.error || 'Server returned failure');
+      }
+    } catch (err: any) {
+      console.warn('Backend Semantic HTML refresh failed. Running client-side fallback...', err);
+      try {
+        const localData = await refreshSemanticHtmlClientSide(visitorKeys[0] || '');
+        setSemanticHtmlKnowledge(localData);
+        setSemanticHtmlSyncStatus('success');
+        setTimeout(() => setSemanticHtmlSyncStatus('idle'), 3000);
+      } catch (localErr: any) {
+        setSemanticHtmlSyncStatus('error');
+        setSemanticHtmlSyncError(localErr.message || 'Gagal menyelaraskan aturan Semantic HTML secara lokal.');
       }
     }
   };
@@ -760,6 +818,111 @@ export default function ApiSettingsView({ visitorKeys, onUpdateVisitorKeys }: Ap
             <AlertCircle className="mx-auto h-8 w-8 text-yellow-500 mb-2" />
             <p className="font-semibold">Aturan Google Helpful Content belum terinisialisasi.</p>
             <p className="text-xs mt-1">Silakan klik tombol "Refresh Google Knowledge" di atas untuk menganalisis dan membangun basis aturan Google Search Central.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Semantic HTML Knowledge Builder Section */}
+      <div className="border-t border-gray-100 pt-8 mt-8" id="semantic-html-rules-section">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+          <div>
+            <h3 className="font-display text-lg font-bold text-gray-900 flex items-center gap-2">
+              <Database className="h-5 w-5 text-amber-600" />
+              Semantic HTML Knowledge Builder
+            </h3>
+            <p className="text-gray-500 text-sm mt-0.5">
+              Lapisan pengetahuan struktur HTML berbasis acuan resmi MDN Web Docs untuk menjamin semantik elemen artikel.
+            </p>
+          </div>
+          <div>
+            <button
+              type="button"
+              id="btn-refresh-semantic-html"
+              disabled={semanticHtmlSyncStatus === 'syncing'}
+              onClick={handleRefreshSemanticHtml}
+              className={`flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 text-sm font-semibold shadow-md transition-all cursor-pointer disabled:opacity-50`}
+            >
+              {semanticHtmlSyncStatus === 'syncing' ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              {semanticHtmlSyncStatus === 'syncing' ? 'Mempelajari MDN Docs...' : 'Refresh Semantic HTML Rules'}
+            </button>
+          </div>
+        </div>
+
+        {semanticHtmlSyncError && (
+          <div className="flex items-center gap-1.5 rounded-lg bg-red-50 p-3 text-xs text-red-600 border border-red-100 mb-4 animate-fade-in">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{semanticHtmlSyncError}</span>
+          </div>
+        )}
+
+        {semanticHtmlSyncStatus === 'success' && (
+          <div className="flex items-center gap-1.5 rounded-lg bg-green-50 p-3 text-xs text-green-600 border border-green-100 mb-4 animate-fade-in">
+            <CheckCircle className="h-4 w-4 shrink-0" />
+            <span>Berhasil menyelaraskan aturan struktur Semantic HTML dari MDN Web Docs!</span>
+          </div>
+        )}
+
+        {loadingSemanticHtml ? (
+          <div className="bg-white border border-gray-100 rounded-2xl p-8 shadow-sm flex flex-col items-center justify-center">
+            <Loader2 className="h-8 w-8 text-amber-600 animate-spin mb-2" />
+            <p className="text-sm text-gray-500">Memuat status aturan Semantic HTML...</p>
+          </div>
+        ) : semanticHtmlKnowledge ? (
+          <div className="space-y-4 animate-fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm bg-gray-50 rounded-2xl p-5 border border-gray-100">
+              <div>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Source</p>
+                <p className="text-gray-800 font-medium mt-1">{semanticHtmlKnowledge.metadata.source}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Source URL</p>
+                <a href={semanticHtmlKnowledge.metadata.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline font-medium block truncate mt-1">
+                  {semanticHtmlKnowledge.metadata.sourceUrl}
+                </a>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Knowledge Version</p>
+                <p className="text-gray-800 font-mono font-bold mt-1">{semanticHtmlKnowledge.metadata.version}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Last Synced</p>
+                <p className="text-gray-800 font-medium mt-1">{semanticHtmlKnowledge.metadata.lastSynced}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Total Elements</p>
+                  <p className="text-3xl font-black text-gray-900 mt-1">{semanticHtmlKnowledge.metadata.totalElements}</p>
+                </div>
+                <div className="h-12 w-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 font-black text-lg">TE</div>
+              </div>
+              <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Semantic Rules</p>
+                  <p className="text-3xl font-black text-gray-900 mt-1">{semanticHtmlKnowledge.semanticRules.length}</p>
+                </div>
+                <div className="h-12 w-12 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600 font-black text-lg">SR</div>
+              </div>
+              <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Formatting Defect Rules</p>
+                  <p className="text-3xl font-black text-gray-900 mt-1">{semanticHtmlKnowledge.formattingValidationRules.length}</p>
+                </div>
+                <div className="h-12 w-12 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600 font-black text-lg">FR</div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-6 text-center text-yellow-800 text-sm">
+            <AlertCircle className="mx-auto h-8 w-8 text-yellow-500 mb-2" />
+            <p className="font-semibold">Aturan Semantic HTML belum terinisialisasi.</p>
+            <p className="text-xs mt-1">Silakan klik tombol "Refresh Semantic HTML Rules" di atas untuk menganalisis dan membangun basis aturan MDN Web Docs.</p>
           </div>
         )}
       </div>

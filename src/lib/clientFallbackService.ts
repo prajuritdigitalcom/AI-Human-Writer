@@ -1,4 +1,4 @@
-import { StoredKnowledge, StoredEditorialKnowledge, StoredGoogleHelpfulKnowledge, GeneratedArticle, GeneratorInput, FAQItem, ImageMetadata, HelpfulContentLog, StyleType } from "../types";
+import { StoredKnowledge, StoredEditorialKnowledge, StoredGoogleHelpfulKnowledge, StoredSemanticHtmlKnowledge, GeneratedArticle, GeneratorInput, FAQItem, ImageMetadata, HelpfulContentLog, SemanticHtmlLog, StyleType } from "../types";
 
 // ==========================================
 // 1. DEFAULT SEEDS FOR CLIENT SIDE
@@ -214,6 +214,157 @@ export function getClientGoogleHelpfulKnowledge(): StoredGoogleHelpfulKnowledge 
 
 export function saveClientGoogleHelpfulKnowledge(data: StoredGoogleHelpfulKnowledge) {
   localStorage.setItem("local_google_helpful_knowledge", JSON.stringify(data));
+}
+
+export const DEFAULT_SEMANTIC_HTML_SEED: StoredSemanticHtmlKnowledge = {
+  metadata: {
+    source: "MDN Web Docs",
+    sourceUrl: "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements",
+    version: "v1.0-Client-Default",
+    lastSynced: new Date().toISOString().split('T')[0],
+    totalElements: 22,
+    generatedDate: new Date().toISOString().split('T')[0]
+  },
+  supportedElements: [
+    "h1", "h2", "h3", "h4", "h5", "h6",
+    "p", "strong", "em", "ol", "ul", "li",
+    "a", "img", "blockquote", "table", "thead", "tbody", "tr", "td", "th", "hr"
+  ],
+  elementRules: [
+    {
+      tag: "h1",
+      definition: "Top-level heading of the document.",
+      purpose: "Represents the main topic or title of the entire article.",
+      semanticMeaning: "Highest semantic importance for document hierarchy.",
+      usageCondition: "Used exactly once per article for the primary title.",
+      relationships: "Parent of major section headings (h2).",
+      commonPitfalls: "Using multiple h1 tags or skipping directly to h3 without an h2."
+    },
+    {
+      tag: "h2",
+      definition: "Major section heading.",
+      purpose: "Divides the document into logical top-level subtopics.",
+      semanticMeaning: "High semantic importance for structuring core sections.",
+      usageCondition: "Used for every main section of the article body.",
+      relationships: "Child of h1, parent of h3.",
+      commonPitfalls: "Using h2 purely for larger font size rather than semantic sectioning."
+    },
+    {
+      tag: "h3",
+      definition: "Subsection heading under an h2.",
+      purpose: "Breaks down a major section into detailed sub-points.",
+      semanticMeaning: "Medium semantic importance for nested sectioning.",
+      usageCondition: "Used inside an h2 section when further hierarchy is required.",
+      relationships: "Child of h2, parent of h4.",
+      commonPitfalls: "Placing h3 without a preceding h2 parent."
+    },
+    {
+      tag: "p",
+      definition: "Paragraph element.",
+      purpose: "Represents a paragraph of text content.",
+      semanticMeaning: "Encapsulates a cohesive, independent thought or narrative unit.",
+      usageCondition: "Default wrapper for all body narrative text.",
+      relationships: "Sibling to headings, lists, blockquotes, and tables.",
+      commonPitfalls: "Wrapping an entire paragraph in <strong> or <em> tags."
+    },
+    {
+      tag: "strong",
+      definition: "Strong importance element.",
+      purpose: "Indicates that its contents have strong importance, seriousness, or urgency.",
+      semanticMeaning: "High semantic weight for critical terms or warnings.",
+      usageCondition: "Used inline on specific key phrases or lead-ins within a paragraph.",
+      relationships: "Inline child of p, li, or td.",
+      commonPitfalls: "Bold face styling applied to whole paragraphs or layout blocks."
+    },
+    {
+      tag: "em",
+      definition: "Emphasis element.",
+      purpose: "Marks text that has stress emphasis.",
+      semanticMeaning: "Changes the meaning/stress of the spoken text.",
+      usageCondition: "Used inline for foreign words, key terms, or stressed words.",
+      relationships: "Inline child of p, li, or td.",
+      commonPitfalls: "Italicizing full blocks for aesthetic design."
+    },
+    {
+      tag: "ol",
+      definition: "Ordered list element.",
+      purpose: "Represents an ordered list of items.",
+      semanticMeaning: "Order of items is meaningful (sequential steps, rankings, timeline).",
+      usageCondition: "Used when item sequence or step numbers matter.",
+      relationships: "Parent of li elements.",
+      commonPitfalls: "Writing steps as plain text paragraphs with manual '1.' prefixes."
+    },
+    {
+      tag: "ul",
+      definition: "Unordered list element.",
+      purpose: "Represents an unordered list of items.",
+      semanticMeaning: "Collection of related items where order does not matter.",
+      usageCondition: "Used for feature lists, key takeaways, bulleted points.",
+      relationships: "Parent of li elements.",
+      commonPitfalls: "Writing lists as plain text paragraphs with leading dash/bullet characters."
+    },
+    {
+      tag: "li",
+      definition: "List item element.",
+      purpose: "Represents an item in an ordered or unordered list.",
+      semanticMeaning: "Single cohesive item in a collection.",
+      usageCondition: "Must be contained within an ol or ul parent.",
+      relationships: "Child of ol or ul.",
+      commonPitfalls: "Placing li outside of ol or ul list containers."
+    },
+    {
+      tag: "blockquote",
+      definition: "Block quotation element.",
+      purpose: "Indicates that the enclosed text is an extended quotation from an external source.",
+      semanticMeaning: "Cited quote or authoritative statement.",
+      usageCondition: "Used strictly for external quotes or highlighted citations.",
+      relationships: "Encloses p or cite elements.",
+      commonPitfalls: "Using blockquote for visual callouts or indenting standard prose."
+    },
+    {
+      tag: "table",
+      definition: "Table element.",
+      purpose: "Represents tabular data.",
+      semanticMeaning: "Data presented in a two-dimensional grid of rows and columns.",
+      usageCondition: "Used for comparisons, matrices, specifications, and tabular facts.",
+      relationships: "Parent of thead, tbody, tr.",
+      commonPitfalls: "Using tables for page layout or multi-column text."
+    }
+  ],
+  semanticRules: [
+    "Headings (h1-h6) define document hierarchy. H1 is reserved for the main article title. Headings must step down sequentially (h1 -> h2 -> h3) without skipping levels (e.g., h2 to h4) purely for visual styling.",
+    "Paragraphs (<p>) encapsulate cohesive blocks of narrative text. Never wrap an entire paragraph inside <strong> or <em> tags.",
+    "Ordered Lists (<ol>) must be used when item order conveys sequence, priority, or chronological steps.",
+    "Unordered Lists (<ul>) are for collections of items where order does not matter. Do not write list items as plain text paragraphs with leading bullet/dash symbols.",
+    "List Items (<li>) must always be wrapped directly inside an <ol> or <ul> parent element.",
+    "Strong (<strong>) denotes strong importance, seriousness, or urgency for text content. It is not merely a bold visual style.",
+    "Emphasis (<em>) represents stress emphasis or specialized technical terms, altering the spoken stress of the phrase.",
+    "Blockquote (<blockquote>) is strictly used for extended quotations or cited excerpts from external authorities.",
+    "Table elements (<table>, <thead>, <tbody>, <tr>, <th>, <td>) are strictly for tabular data representation (matrices, comparisons, specifications). Tables must never be used for page layout."
+  ],
+  formattingValidationRules: [
+    "Detect paragraphs wrapped entirely in <strong> or <em> tags.",
+    "Detect pseudo-lists formatted as plain text paragraphs with leading bullets, dashes, or numbers instead of <ul>/<ol> and <li>.",
+    "Detect headings used out of hierarchical order or used purely to adjust font size.",
+    "Detect tables used for page layout or multi-column text formatting.",
+    "Detect non-semantic HTML structures, empty tags, or invalid element nesting."
+  ]
+};
+
+export function getClientSemanticHtmlKnowledge(): StoredSemanticHtmlKnowledge {
+  const data = localStorage.getItem("local_semantic_html_knowledge");
+  if (data) {
+    try {
+      return JSON.parse(data);
+    } catch (e) {
+      console.error("Failed to parse local semantic html rules, using default.");
+    }
+  }
+  return DEFAULT_SEMANTIC_HTML_SEED;
+}
+
+export function saveClientSemanticHtmlKnowledge(data: StoredSemanticHtmlKnowledge) {
+  localStorage.setItem("local_semantic_html_knowledge", JSON.stringify(data));
 }
 
 // ==========================================
@@ -902,6 +1053,95 @@ Format your output ONLY as JSON:
   };
 
   return finalArticle;
+}
+
+export async function refreshSemanticHtmlClientSide(apiKey: string): Promise<StoredSemanticHtmlKnowledge> {
+  const currentKnowledge = getClientSemanticHtmlKnowledge();
+  
+  const prompt = `
+You are an expert Frontend Architect & HTML Standards Specialist trained on MDN Web Docs HTML Elements Reference.
+Generate an updated, high-quality Semantic HTML Knowledge base in JSON matching this schema:
+{
+  "supportedElements": ["h1", "h2", "h3", "h4", "h5", "h6", "p", "strong", "em", "ol", "ul", "li", "a", "img", "blockquote", "table", "thead", "tbody", "tr", "td", "th", "hr"],
+  "elementRules": [
+    {
+      "tag": "h1",
+      "definition": "Top-level heading of the document.",
+      "purpose": "Represents the main topic or title of the entire article.",
+      "semanticMeaning": "Highest semantic importance for document hierarchy.",
+      "usageCondition": "Used exactly once per article for the primary title.",
+      "relationships": "Parent of major section headings (h2).",
+      "commonPitfalls": "Using multiple h1 tags or skipping directly to h3 without an h2."
+    }
+  ],
+  "semanticRules": [
+    "Headings (h1-h6) define document hierarchy. H1 is reserved for the main article title. Headings must step down sequentially (h1 -> h2 -> h3) without skipping levels (e.g., h2 to h4) purely for visual styling.",
+    "Paragraphs (<p>) encapsulate cohesive blocks of narrative text. Never wrap an entire paragraph inside <strong> or <em> tags.",
+    "Ordered Lists (<ol>) must be used when item order conveys sequence, priority, or chronological steps.",
+    "Unordered Lists (<ul>) are for collections of items where order does not matter. Do not write list items as plain text paragraphs with leading bullet/dash symbols.",
+    "List Items (<li>) must always be wrapped directly inside an <ol> or <ul> parent element.",
+    "Strong (<strong>) denotes strong importance, seriousness, or urgency for text content. It is not merely a bold visual style.",
+    "Emphasis (<em>) represents stress emphasis or specialized technical terms, altering the spoken stress of the phrase.",
+    "Blockquote (<blockquote>) is strictly used for extended quotations or cited excerpts from external authorities.",
+    "Table elements (<table>, <thead>, <tbody>, <tr>, <th>, <td>) are strictly for tabular data representation (matrices, comparisons, specifications). Tables must never be used for page layout."
+  ],
+  "formattingValidationRules": [
+    "Detect paragraphs wrapped entirely in <strong> or <em> tags.",
+    "Detect pseudo-lists formatted as plain text paragraphs with leading bullets, dashes, or numbers instead of <ul>/<ol> and <li>.",
+    "Detect headings used out of hierarchical order or used purely to adjust font size.",
+    "Detect tables used for page layout or multi-column text formatting.",
+    "Detect non-semantic HTML structures, empty tags, or invalid element nesting."
+  ]
+}
+`;
+
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      supportedElements: { type: "ARRAY", items: { type: "STRING" } },
+      elementRules: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            tag: { type: "STRING" },
+            definition: { type: "STRING" },
+            purpose: { type: "STRING" },
+            semanticMeaning: { type: "STRING" },
+            usageCondition: { type: "STRING" },
+            relationships: { type: "STRING" },
+            commonPitfalls: { type: "STRING" }
+          },
+          required: ["tag", "definition", "purpose", "semanticMeaning", "usageCondition", "relationships", "commonPitfalls"]
+        }
+      },
+      semanticRules: { type: "ARRAY", items: { type: "STRING" } },
+      formattingValidationRules: { type: "ARRAY", items: { type: "STRING" } }
+    },
+    required: ["supportedElements", "elementRules", "semanticRules", "formattingValidationRules"]
+  };
+
+  const jsonText = await callGeminiClientDirect(prompt, apiKey, schema);
+  const parsed = JSON.parse(jsonText);
+  const now = new Date().toISOString().split('T')[0];
+
+  const updated: StoredSemanticHtmlKnowledge = {
+    metadata: {
+      source: "MDN Web Docs",
+      sourceUrl: "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements",
+      version: `v1.1-Client-Synced-${now.replace(/-/g, '')}`,
+      lastSynced: now,
+      totalElements: parsed.supportedElements?.length || currentKnowledge.supportedElements.length,
+      generatedDate: now
+    },
+    supportedElements: parsed.supportedElements || currentKnowledge.supportedElements,
+    elementRules: parsed.elementRules || currentKnowledge.elementRules,
+    semanticRules: parsed.semanticRules || currentKnowledge.semanticRules,
+    formattingValidationRules: parsed.formattingValidationRules || currentKnowledge.formattingValidationRules
+  };
+
+  saveClientSemanticHtmlKnowledge(updated);
+  return updated;
 }
 
 function escapeRegExp(string: string) {

@@ -85,6 +85,17 @@ export interface GeneratedArticle {
     articleTitle: string;
   }[];
   helpfulContentLog?: HelpfulContentLog;
+  semanticHtmlLog?: SemanticHtmlLog;
+}
+
+export interface SemanticHtmlLog {
+  knowledgeVersion: string;
+  evaluationResult: string;
+  validationResult: string;
+  revisionCount: number;
+  issuesDetected: string[];
+  revisionRecommendations: string[];
+  finalStatus: string;
 }
 
 export interface HelpfulContentLog {
@@ -162,6 +173,33 @@ export interface StoredEditorialKnowledge {
   principles: string[];
   editorialChecks: string[];
   revisionStrategies: string[];
+}
+
+export interface SemanticHtmlMetadata {
+  source: string;
+  sourceUrl: string;
+  version: string;
+  lastSynced: string;
+  totalElements: number;
+  generatedDate: string;
+}
+
+export interface ElementSemanticRule {
+  tag: string;
+  definition: string;
+  purpose: string;
+  semanticMeaning: string;
+  usageCondition: string;
+  relationships: string;
+  commonPitfalls: string;
+}
+
+export interface StoredSemanticHtmlKnowledge {
+  metadata: SemanticHtmlMetadata;
+  supportedElements: string[];
+  elementRules: ElementSemanticRule[];
+  semanticRules: string[];
+  formattingValidationRules: string[];
 }
 
 

@@ -3,6 +3,8 @@ import { StyleType, AuditReport, GeneratedArticle, OverusedWordCheck, FAQItem, I
 import { getStoredKnowledge } from "./wikipediaKnowledge.js";
 import { getStoredEditorialKnowledge } from "./georgeKaoKnowledge.js";
 import { getStoredGoogleHelpfulKnowledge } from "./googleHelpfulKnowledge.js";
+import { getStoredSemanticHtmlKnowledge } from "./semanticHtmlKnowledge.js";
+import { runSemanticHtmlEngine } from "./semanticHtmlEngine.js";
 
 
 // Helper to split text into sentences
@@ -665,6 +667,50 @@ REQUIRED OUTPUT FORMAT (JSON ONLY):
     };
   }
 
+  // =========================================================================
+  // STAGE 7: SEMANTIC HTML KNOWLEDGE ENGINE
+  // =========================================================================
+  console.log("\n--- [STAGE 7] SEMANTIC HTML KNOWLEDGE ENGINE ---");
+  const semanticKnowledge = getStoredSemanticHtmlKnowledge();
+  let semanticHtmlLogPayload: any = null;
+
+  try {
+    const semanticResult = await runSemanticHtmlEngine(
+      keys,
+      currentMarkdown,
+      currentArticlePayload.title,
+      parsedLinks
+    );
+
+    console.log("[Semantic HTML Engine] Audit complete. Issues count:", semanticResult.issuesDetected.length);
+    console.log("[Semantic HTML Engine] Evaluation Result:\n", semanticResult.evaluationResult);
+
+    if (semanticResult.finalSemanticDraft && semanticResult.finalSemanticDraft.trim().length > 100) {
+      currentMarkdown = semanticResult.finalSemanticDraft;
+    }
+
+    semanticHtmlLogPayload = {
+      knowledgeVersion: semanticKnowledge.metadata.version,
+      evaluationResult: semanticResult.evaluationResult,
+      validationResult: semanticResult.issuesDetected.length > 0 ? "Revised" : "Passed",
+      revisionCount: semanticResult.issuesDetected.length > 0 ? 1 : 0,
+      issuesDetected: semanticResult.issuesDetected,
+      revisionRecommendations: semanticResult.revisionRecommendations,
+      finalStatus: "Completed"
+    };
+  } catch (err: any) {
+    console.error("[Semantic HTML Engine Error] Workflow failed, falling back to current draft:", err.message || err);
+    semanticHtmlLogPayload = {
+      knowledgeVersion: semanticKnowledge.metadata.version,
+      evaluationResult: "Evaluasi struktur Semantic HTML gagal diproses karena kesalahan sistem. Draf artikel tetap aman.",
+      validationResult: "Skipped",
+      revisionCount: 0,
+      issuesDetected: [],
+      revisionRecommendations: [],
+      finalStatus: "Failed"
+    };
+  }
+
   // Calculate Keyword Density
   const lowercaseContent = currentMarkdown.toLowerCase();
   const lowercaseKeyword = keyword.toLowerCase();
@@ -727,7 +773,8 @@ REQUIRED OUTPUT FORMAT (JSON ONLY):
     },
     semanticKeywords: currentArticlePayload.semanticKeywords || [],
     complianceHistory: complianceHistory,
-    helpfulContentLog: googleHelpfulLogPayload
+    helpfulContentLog: googleHelpfulLogPayload,
+    semanticHtmlLog: semanticHtmlLogPayload
   };
 }
 

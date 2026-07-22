@@ -320,6 +320,49 @@ export default function PreviewView({ article }: PreviewViewProps) {
           </div>
         )}
 
+        {/* Semantic HTML Audit Log */}
+        {article.semanticHtmlLog && (
+          <div className="bg-amber-50 border border-amber-100 p-5 rounded space-y-3" id="semantic-html-audit-sidebar">
+            <h4 className="text-xs font-bold text-amber-900 flex items-center gap-1.5 uppercase tracking-wider">
+              <CheckCircle className="h-4 w-4 text-amber-700 shrink-0" />
+              Semantic HTML Audit
+            </h4>
+            
+            <div className="space-y-1.5 text-xs text-amber-800">
+              <div className="flex justify-between">
+                <span className="font-medium">Status:</span>
+                <span className="font-bold uppercase tracking-wide bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded text-[10px]">
+                  {article.semanticHtmlLog.validationResult}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">Versi Knowledge:</span>
+                <span className="font-mono font-bold text-amber-900">{article.semanticHtmlLog.knowledgeVersion}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">Total Isu Terdeteksi:</span>
+                <span className="font-bold text-amber-900">{article.semanticHtmlLog.issuesDetected?.length || 0}</span>
+              </div>
+            </div>
+
+            <div className="border-t border-amber-200/50 pt-2 text-[11px] text-amber-900/85 leading-relaxed text-justify">
+              <p className="font-semibold mb-1 text-amber-950">Hasil Evaluasi Semantik:</p>
+              {article.semanticHtmlLog.evaluationResult}
+            </div>
+
+            {article.semanticHtmlLog.issuesDetected && article.semanticHtmlLog.issuesDetected.length > 0 && (
+              <div className="border-t border-amber-200/50 pt-2 text-[11px] text-amber-900">
+                <p className="font-semibold mb-1 text-amber-950">Isu HTML Terkoreksi:</p>
+                <ul className="list-disc pl-4 space-y-0.5 text-[10px]">
+                  {article.semanticHtmlLog.issuesDetected.map((issue, idx) => (
+                    <li key={idx}>{issue}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* TinyMCE instructions */}
         <div className="bg-blue-50 border border-blue-100 p-5 rounded space-y-2">
           <h4 className="text-xs font-bold text-blue-900 flex items-center gap-1.5">

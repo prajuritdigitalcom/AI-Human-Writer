@@ -6,6 +6,7 @@ import { StyleType } from "./src/types.js";
 import { initKnowledgeOnStartup, getStoredKnowledge, refreshWikipediaKnowledge } from "./server/wikipediaKnowledge.js";
 import { initEditorialKnowledgeOnStartup, getStoredEditorialKnowledge, refreshEditorialKnowledge } from "./server/georgeKaoKnowledge.js";
 import { initGoogleHelpfulKnowledgeOnStartup, getStoredGoogleHelpfulKnowledge, refreshGoogleHelpfulKnowledge } from "./server/googleHelpfulKnowledge.js";
+import { initSemanticHtmlKnowledgeOnStartup, getStoredSemanticHtmlKnowledge, refreshSemanticHtmlKnowledge } from "./server/semanticHtmlKnowledge.js";
 
 
 // Load environment variables
@@ -226,6 +227,36 @@ app.post("/api/refresh-google-helpful", async (req, res) => {
   }
 });
 
+// API Routes for Semantic HTML Knowledge Builder
+app.get("/api/semantic-html-status", (req, res) => {
+  try {
+    const knowledge = getStoredSemanticHtmlKnowledge();
+    res.json({ success: true, knowledge });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || "Gagal memuat aturan Semantic HTML." });
+  }
+});
+
+app.post("/api/refresh-semantic-html", async (req, res) => {
+  const { visitorKeys } = req.body;
+  try {
+    const activeKeys = resolveAllKeys(visitorKeys);
+    if (activeKeys.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Tidak ada API Key aktif untuk memproses pembaruan aturan Semantic HTML. Tambahkan API Key di tab Pengaturan API terlebih dahulu."
+      });
+    }
+
+    console.log("[Semantic HTML API] Refreshing Semantic HTML rules from MDN Web Docs...");
+    const refreshed = await refreshSemanticHtmlKnowledge(activeKeys);
+    res.json({ success: true, knowledge: refreshed });
+  } catch (err: any) {
+    console.error("[Semantic HTML API Error] Failed to refresh Semantic HTML rules:", err.message || err);
+    res.status(500).json({ success: false, error: err.message || "Gagal menyelaraskan aturan dengan MDN Web Docs." });
+  }
+});
+
 async function startServer() {
   try {
     // Initialize Wikipedia compliance rules
@@ -249,6 +280,14 @@ async function startServer() {
     initGoogleHelpfulKnowledgeOnStartup();
   } catch (err: any) {
     console.error("[Google Helpful Knowledge Init Error]:", err.message || err);
+  }
+
+  try {
+    // Initialize Semantic HTML rules
+    console.log("[Semantic HTML Knowledge] Initializing Semantic HTML Knowledge...");
+    initSemanticHtmlKnowledgeOnStartup();
+  } catch (err: any) {
+    console.error("[Semantic HTML Knowledge Init Error]:", err.message || err);
   }
 
 
