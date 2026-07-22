@@ -60,6 +60,7 @@ export interface ComplianceStep {
 
 export interface GeneratedArticle {
   title: string;
+  metaTitle: string;
   slug: string;
   metaDescription: string;
   excerpt: string;

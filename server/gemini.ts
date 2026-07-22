@@ -301,9 +301,10 @@ You must return your output strictly in JSON format. The article text inside "co
 
 Strict JSON format to generate:
 {
-  "title": "A highly catchy, SEO-optimized title (no boring templates, no 'Panduan Lengkap Untuk')",
+  "title": "A highly catchy, comprehensive main article title / H1 (no boring templates, no 'Panduan Lengkap Untuk')",
+  "metaTitle": "Highly optimized Meta Title SEO for Google SERP (Strictly 50-60 characters, focus keyword positioned near the front, high CTR click-worthy title)",
   "slug": "seo-friendly-url-slug",
-  "metaDescription": "SEO meta description, 150-160 characters, persuasive",
+  "metaDescription": "Persuasive Meta Description SEO (Strictly 140-160 characters, contains focus keyword naturally, clear value proposition, ending with a strong Call to Action to maximize CTR on Google SERP)",
   "excerpt": "Compelling excerpt/summary of the article, 200-250 characters",
   "featuredImageTitle": "Title for the image",
   "featuredImageAltText": "Keyword-optimized Alt Text for the image",
@@ -366,6 +367,7 @@ Instruksi Tambahan:
             type: Type.OBJECT,
             properties: {
               title: { type: Type.STRING },
+              metaTitle: { type: Type.STRING },
               slug: { type: Type.STRING },
               metaDescription: { type: Type.STRING },
               excerpt: { type: Type.STRING },
@@ -390,7 +392,7 @@ Instruksi Tambahan:
               }
             },
             required: [
-              "title", "slug", "metaDescription", "excerpt",
+              "title", "metaTitle", "slug", "metaDescription", "excerpt",
               "featuredImageTitle", "featuredImageAltText", "featuredImageCaption",
               "contentMarkdown", "faq", "semanticKeywords"
             ]
@@ -757,6 +759,7 @@ REQUIRED OUTPUT FORMAT (JSON ONLY):
 
   return {
     title: currentArticlePayload.title,
+    metaTitle: currentArticlePayload.metaTitle || currentArticlePayload.title,
     slug: currentArticlePayload.slug,
     metaDescription: currentArticlePayload.metaDescription,
     excerpt: currentArticlePayload.excerpt,

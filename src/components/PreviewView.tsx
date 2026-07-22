@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GeneratedArticle } from '../types';
 import { 
   Eye, 
@@ -19,7 +19,12 @@ import {
   Globe, 
   Image as ImageIcon,
   CheckCircle,
-  HelpCircle
+  HelpCircle,
+  Search,
+  Edit3,
+  Save,
+  AlertCircle,
+  Sparkles
 } from 'lucide-react';
 
 interface PreviewViewProps {
@@ -34,6 +39,18 @@ export default function PreviewView({ article }: PreviewViewProps) {
   const [includeMeta, setIncludeMeta] = useState(false);
   const [includeSchema, setIncludeSchema] = useState(false);
 
+  // Editable Meta Title & Description states
+  const [metaTitle, setMetaTitle] = useState('');
+  const [metaDescription, setMetaDescription] = useState('');
+  const [isEditingMeta, setIsEditingMeta] = useState(false);
+
+  useEffect(() => {
+    if (article) {
+      setMetaTitle(article.metaTitle || article.title || '');
+      setMetaDescription(article.metaDescription || '');
+    }
+  }, [article]);
+
   if (!article) {
     return (
       <div className="rounded-none bg-white p-12 text-center border border-gray-200 select-none animate-fade-in" id="preview-empty">
@@ -46,12 +63,77 @@ export default function PreviewView({ article }: PreviewViewProps) {
     );
   }
 
+  // Calculate character count statuses
+  const getMetaTitleStatus = (titleStr: string) => {
+    const len = titleStr.length;
+    if (len >= 50 && len <= 60) {
+      return {
+        label: `Optimal (${len}/60)`,
+        color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+        description: 'Sangat optimal untuk Google SERP (50-60 karakter).'
+      };
+    } else if ((len >= 40 && len < 50) || (len > 60 && len <= 65)) {
+      return {
+        label: `Cukup Baik (${len}/60)`,
+        color: 'bg-amber-100 text-amber-800 border-amber-200',
+        description: len < 50 ? 'Agak pendek. Disarankan 50-60 karakter.' : 'Mendekati batas potongan SERP.'
+      };
+    } else if (len < 40) {
+      return {
+        label: `Sangat Pendek (${len}/60)`,
+        color: 'bg-rose-100 text-rose-800 border-rose-200',
+        description: 'Terlalu pendek untuk memaksimalkan kata kunci SERP.'
+      };
+    } else {
+      return {
+        label: `Terlalu Panjang (${len}/60)`,
+        color: 'bg-rose-100 text-rose-800 border-rose-200',
+        description: 'Melebihi 60-65 karakter, berisiko terpotong di SERP.'
+      };
+    }
+  };
+
+  const getMetaDescriptionStatus = (descStr: string) => {
+    const len = descStr.length;
+    if (len >= 140 && len <= 160) {
+      return {
+        label: `Optimal (${len}/160)`,
+        color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+        description: 'Sangat optimal untuk cuplikan SERP (140-160 karakter).'
+      };
+    } else if ((len >= 120 && len < 140) || (len > 160 && len <= 165)) {
+      return {
+        label: `Cukup Baik (${len}/160)`,
+        color: 'bg-amber-100 text-amber-800 border-amber-200',
+        description: len < 140 ? 'Agak pendek. Tambahkan ajakan/CTA.' : 'Mendekati batas potongan cuplikan.'
+      };
+    } else if (len < 120) {
+      return {
+        label: `Sangat Pendek (${len}/160)`,
+        color: 'bg-rose-100 text-rose-800 border-rose-200',
+        description: 'Terlalu pendek. Minimal disarankan 140 karakter.'
+      };
+    } else {
+      return {
+        label: `Terlalu Panjang (${len}/160)`,
+        color: 'bg-rose-100 text-rose-800 border-rose-200',
+        description: 'Melebihi 160 karakter, berisiko terpotong di SERP.'
+      };
+    }
+  };
+
+  const titleStatus = getMetaTitleStatus(metaTitle);
+  const descStatus = getMetaDescriptionStatus(metaDescription);
+
   // Calculate dynamic HTML body contents depending on active options
   const getCombinedHtml = () => {
     let html = '';
     
     if (includeMeta) {
-      html += `<p style="font-style: italic; color: #666; margin-bottom: 24px;"><strong>Meta Description:</strong> ${article.metaDescription}</p>\n\n`;
+      html += `<div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px 18px; margin-bottom: 24px;">
+        <p style="margin: 0 0 6px 0; font-size: 14px; color: #1e293b;"><strong>Meta Title:</strong> ${metaTitle}</p>
+        <p style="margin: 0; font-size: 14px; color: #475569;"><strong>Meta Description:</strong> ${metaDescription}</p>
+      </div>\n\n`;
     }
 
     if (article.featuredImage) {
@@ -70,7 +152,7 @@ export default function PreviewView({ article }: PreviewViewProps) {
   const getCombinedMarkdown = () => {
     let md = '';
     if (includeMeta) {
-      md += `*Meta Description:* ${article.metaDescription}\n\n`;
+      md += `**Meta Title:** ${metaTitle}\n**Meta Description:** ${metaDescription}\n\n`;
     }
     if (article.featuredImage) {
       md += `![${article.featuredImage.alt}](${article.featuredImage.url})\n*${article.featuredImage.caption}*\n\n`;
@@ -414,6 +496,160 @@ export default function PreviewView({ article }: PreviewViewProps) {
             <ImageIcon className="h-3.5 w-3.5 text-gray-500" />
             Add Media
           </button>
+        </div>
+
+        {/* Google SERP Snippet & Meta Analysis Panel (Yoast / Rank Math style) */}
+        <div className="bg-white border border-gray-300 rounded shadow-xs p-4 space-y-4" id="seo-meta-serp-box">
+          <div className="flex flex-wrap items-center justify-between border-b border-gray-200 pb-3 gap-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-blue-50 text-blue-700 rounded-lg border border-blue-100">
+                <Search className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="font-sans text-sm font-bold text-gray-900 flex items-center gap-2">
+                  SEO Meta Title & Description Preview
+                  <span className="text-[10px] font-semibold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full border border-blue-200">
+                    Google SERP Simulator
+                  </span>
+                </h3>
+                <p className="text-[11px] text-gray-500">Pratinjau tampilan cuplikan di Google Search & evaluasi panjang karakter SEO</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsEditingMeta(!isEditingMeta)}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded border border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors cursor-pointer"
+            >
+              {isEditingMeta ? <Save className="h-3.5 w-3.5 text-blue-600" /> : <Edit3 className="h-3.5 w-3.5 text-gray-500" />}
+              {isEditingMeta ? 'Selesai Edit' : 'Edit Meta Tag'}
+            </button>
+          </div>
+
+          {/* Google Search Snippet Card */}
+          <div className="bg-gray-50/80 border border-gray-200/90 rounded-lg p-4 space-y-2 select-text font-sans shadow-xs">
+            <div className="flex items-center gap-1.5 text-[11px] text-gray-600">
+              <Globe className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+              <span className="truncate">https://yourdomain.com › blog › <span className="font-mono text-gray-700 font-semibold">{article.slug}</span></span>
+            </div>
+
+            {/* Meta Title SERP Link */}
+            <div>
+              <h4 className="text-[#1a0dab] hover:underline text-base md:text-lg font-medium leading-snug cursor-pointer">
+                {metaTitle}
+              </h4>
+            </div>
+
+            {/* Meta Description SERP Snippet */}
+            <div>
+              <p className="text-[#4d5156] text-xs leading-relaxed">
+                {metaDescription}
+              </p>
+            </div>
+          </div>
+
+          {/* Detailed Inputs / Status Indicators */}
+          {isEditingMeta ? (
+            <div className="space-y-3.5 pt-1 text-xs">
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="font-bold text-gray-800 flex items-center gap-1">
+                    Meta Title SEO:
+                    <span className="text-[10px] font-normal text-gray-500">(Ideal 50-60 karakter)</span>
+                  </label>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${titleStatus.color}`}>
+                    {titleStatus.label}
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={metaTitle}
+                  onChange={(e) => setMetaTitle(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-blue-500 bg-white"
+                  placeholder="Masukkan Meta Title SEO..."
+                />
+                <p className="text-[10px] text-gray-500 mt-1">{titleStatus.description}</p>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="font-bold text-gray-800 flex items-center gap-1">
+                    Meta Description SEO:
+                    <span className="text-[10px] font-normal text-gray-500">(Ideal 140-160 karakter)</span>
+                  </label>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${descStatus.color}`}>
+                    {descStatus.label}
+                  </span>
+                </div>
+                <textarea
+                  value={metaDescription}
+                  onChange={(e) => setMetaDescription(e.target.value)}
+                  rows={2}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-blue-500 bg-white resize-y"
+                  placeholder="Masukkan Meta Description SEO..."
+                />
+                <p className="text-[10px] text-gray-500 mt-1">{descStatus.description}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {/* Meta Title Indicator */}
+                <div className="bg-gray-50/70 p-3 rounded-md border border-gray-200/80 flex items-start justify-between gap-2">
+                  <div className="space-y-0.5">
+                    <div className="text-[11px] font-semibold text-gray-600">Panjang Meta Title</div>
+                    <div className="text-xs font-mono font-bold text-gray-900">{metaTitle.length} Karakter</div>
+                    <p className="text-[10px] text-gray-500">{titleStatus.description}</p>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border shrink-0 ${titleStatus.color}`}>
+                    {titleStatus.label}
+                  </span>
+                </div>
+
+                {/* Meta Description Indicator */}
+                <div className="bg-gray-50/70 p-3 rounded-md border border-gray-200/80 flex items-start justify-between gap-2">
+                  <div className="space-y-0.5">
+                    <div className="text-[11px] font-semibold text-gray-600">Panjang Meta Deskripsi</div>
+                    <div className="text-xs font-mono font-bold text-gray-900">{metaDescription.length} Karakter</div>
+                    <p className="text-[10px] text-gray-500">{descStatus.description}</p>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border shrink-0 ${descStatus.color}`}>
+                    {descStatus.label}
+                  </span>
+                </div>
+              </div>
+
+              {/* Quick Copy Toolbar */}
+              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => handleCopy(metaTitle, 'meta-title')}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded px-2.5 py-1.5 transition-colors cursor-pointer"
+                >
+                  {copiedSection === 'meta-title' ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5 text-gray-400" />}
+                  Salin Meta Title
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleCopy(metaDescription, 'meta-desc')}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded px-2.5 py-1.5 transition-colors cursor-pointer"
+                >
+                  {copiedSection === 'meta-desc' ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5 text-gray-400" />}
+                  Salin Meta Deskripsi
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleCopy(`META TITLE: ${metaTitle}\nSLUG: ${article.slug}\nMETA DESKRIPSI: ${metaDescription}`, 'all-meta')}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded px-2.5 py-1.5 transition-colors cursor-pointer"
+                >
+                  {copiedSection === 'all-meta' ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5 text-blue-600" />}
+                  Salin Semua Meta Tag SEO
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 2. TinyMCE Editor Container */}

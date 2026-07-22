@@ -67,7 +67,7 @@ export default function HistoryView({
   };
 
   const handleDownload = (article: GeneratedArticle) => {
-    const content = `JUDUL: ${article.title}\nSLUG: ${article.slug}\nMETA DESKRIPSI: ${article.metaDescription}\n\n========================================\n\n${article.contentMarkdown}`;
+    const content = `JUDUL H1: ${article.title}\nMETA TITLE: ${article.metaTitle || article.title}\nSLUG: ${article.slug}\nMETA DESKRIPSI: ${article.metaDescription}\n\n========================================\n\n${article.contentMarkdown}`;
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');

@@ -734,9 +734,10 @@ CRITICAL INSTRUCTIONS:
 
 Format your output as a valid JSON with:
 {
-  "title": "A highly engaging, click-worthy but non-clickbait title",
+  "title": "A highly engaging, click-worthy main article title / H1",
+  "metaTitle": "Highly optimized Meta Title SEO for Google SERP (50-60 characters, focus keyword positioned near front, high CTR)",
   "contentMarkdown": "The full body markdown text of the article.",
-  "metaDescription": "Optimized SEO meta description under 155 characters.",
+  "metaDescription": "Persuasive Meta Description SEO (140-160 characters, focus keyword included, compelling Call to Action)",
   "excerpt": "A short 1-2 sentence excerpt of the article",
   "semanticKeywords": ["3-5 high value semantic keywords relating to this subject"]
 }
@@ -746,12 +747,13 @@ Format your output as a valid JSON with:
     type: "OBJECT",
     properties: {
       title: { type: "STRING" },
+      metaTitle: { type: "STRING" },
       contentMarkdown: { type: "STRING" },
       metaDescription: { type: "STRING" },
       excerpt: { type: "STRING" },
       semanticKeywords: { type: "ARRAY", items: { type: "STRING" } }
     },
-    required: ["title", "contentMarkdown", "metaDescription", "excerpt", "semanticKeywords"]
+    required: ["title", "metaTitle", "contentMarkdown", "metaDescription", "excerpt", "semanticKeywords"]
   };
 
   const draftJsonText = await callGeminiClientDirect(outlinePrompt, apiKey, outlineSchema);
@@ -1002,6 +1004,7 @@ Format your output ONLY as JSON:
 
   const finalArticle: GeneratedArticle = {
     title: currentTitle,
+    metaTitle: draftData.metaTitle || currentTitle,
     slug: slug,
     metaDescription: draftData.metaDescription || `Artikel lengkap tentang ${focusKeyword}`,
     excerpt: draftData.excerpt || `Artikel lengkap tentang ${focusKeyword}`,
