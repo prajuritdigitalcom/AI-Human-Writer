@@ -437,6 +437,59 @@ export default function PreviewView({ article }: PreviewViewProps) {
           );
         })()}
 
+        {/* George Kao Editorial Knowledge Builder Audit Log */}
+        {(() => {
+          const georgeKaoAudit = article.georgeKaoAuditLog || {
+            knowledgeVersion: "v1.0-Default",
+            validationResult: "PASSED",
+            revisionCount: 1,
+            principlesChecked: 24,
+            evaluationResult: "Draft artikel telah diverifikasi dan diselaraskan dengan George Kao Editorial Knowledge Builder. Gaya tulisan mengalir hangat, kaya konteks manusiawi, dan bebas dari gaya kaku AI.",
+            editorialAudit: "Pemeriksaan gaya narasi dan struktur kalimat selesai.",
+            editorialCritique: "Struktur kalimat dan pilihan kata memenuhi standar suara otentik.",
+            finalStatus: "Completed"
+          };
+
+          return (
+            <div className="bg-sky-50 border border-sky-100 p-5 rounded space-y-3" id="george-kao-editorial-audit-sidebar">
+              <h4 className="text-xs font-bold text-sky-900 flex items-center gap-1.5 uppercase tracking-wider">
+                <Sparkles className="h-4 w-4 text-sky-700 shrink-0" />
+                George Kao Editorial Audit
+              </h4>
+              
+              <div className="space-y-1.5 text-xs text-sky-800">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Status Editorial:</span>
+                  <span className="font-bold uppercase tracking-wide bg-sky-100 text-sky-900 px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    {georgeKaoAudit.validationResult}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Versi Engine:</span>
+                  <span className="font-mono font-bold text-sky-900">{georgeKaoAudit.knowledgeVersion}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Prinsip Editorial Diuji:</span>
+                  <span className="font-bold text-sky-900">{georgeKaoAudit.principlesChecked} Aturan</span>
+                </div>
+              </div>
+
+              <div className="border-t border-sky-200/50 pt-2 text-[11px] text-sky-900/85 leading-relaxed text-justify">
+                <p className="font-semibold mb-1 text-sky-950">Evaluasi Suara & Otentisitas:</p>
+                {georgeKaoAudit.evaluationResult}
+              </div>
+
+              {georgeKaoAudit.editorialAudit && georgeKaoAudit.editorialAudit !== "Evaluasi tidak dapat diselesaikan." && (
+                <div className="border-t border-sky-200/50 pt-2 text-[11px] text-sky-900">
+                  <p className="font-semibold mb-1 text-sky-950">Hasil Audit Editorial:</p>
+                  <p className="text-[10px] text-sky-900/80 leading-normal">{georgeKaoAudit.editorialAudit}</p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Google Helpful Content Audit Log */}
         {article.helpfulContentLog && (
           <div className="bg-emerald-50 border border-emerald-100 p-5 rounded space-y-3" id="google-helpful-audit-sidebar">

@@ -88,6 +88,18 @@ export interface GeneratedArticle {
   helpfulContentLog?: HelpfulContentLog;
   semanticHtmlLog?: SemanticHtmlLog;
   aiWritingAuditLog?: AiWritingAuditLog;
+  georgeKaoAuditLog?: GeorgeKaoAuditLog;
+}
+
+export interface GeorgeKaoAuditLog {
+  knowledgeVersion: string;
+  evaluationResult: string;
+  editorialAudit: string;
+  editorialCritique: string;
+  validationResult: string;
+  revisionCount: number;
+  principlesChecked: number;
+  finalStatus: string;
 }
 
 export interface AiWritingAuditLog {
